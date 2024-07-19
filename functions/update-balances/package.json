@@ -12,5 +12,8 @@
   "dependencies": {
     "@google-cloud/functions-framework": "^3.4.1",
     "typescript": "^5.5.3"
+  },
+  "devDependencies": {
+    "eslint": "^9.7.0"
   }
 }
