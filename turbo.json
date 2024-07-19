@@ -3,38 +3,21 @@
   "ui": "tui",
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env*"
-      ],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**"
-      ]
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": [".next/**", "!.next/cache/**"]
     },
     "lint": {
-      "dependsOn": [
-        "^lint"
-      ]
+      "dependsOn": ["^lint"]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "pack": {
-      "dependsOn": [
-        "^pack"
-      ],
-      "inputs": [
-        "$TURBO_DEFAULTS",
-        "dist/**"
-      ],
-      "outputs": [
-        "pack/*.tgz"
-      ]
+      "dependsOn": ["build", "^pack"],
+      "inputs": ["$TURBO_DEFAULTS", "dist/**"],
+      "outputs": ["pack/*.tgz"]
     }
   }
 }
