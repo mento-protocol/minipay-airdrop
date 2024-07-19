@@ -1,0 +1,8 @@
+{
+  "extends": "@repo/typescript-config/base.json",
+  "rootDir": "./src",
+  "compilerOptions": {
+    "downlevelIteration": true,
+    "outDir": "dist"
+  }
+}
