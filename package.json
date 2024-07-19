@@ -1,5 +1,5 @@
 {
-  "name": "my-turborepo",
+  "name": "minipay-airdrop",
   "private": true,
   "scripts": {
     "build": "turbo build",
