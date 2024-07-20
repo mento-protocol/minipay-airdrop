@@ -36,9 +36,9 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+.tool-versions
+.staging
 
 # Env
 .env.local
 
-# Packages
-functions/*/pack
