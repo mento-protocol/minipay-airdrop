@@ -2,12 +2,16 @@
   "name": "minipay-airdrop",
   "version": "1.0.0",
   "main": "dist/index.js",
+  "type": "module",
   "files": [
     "dist/*",
     "pnpm-lock.yaml"
   ],
   "scripts": {
-    "dev-fe": "npx ts-node src/mock-server/index.ts"
+    "dev": "nodemon node_modules/@google-cloud/functions-framework/build/src/main.js -- --target=getAllocation",
+    "dev:fe": "tsx src/mock-server.ts",
+    "build:watch": "tsc --watch",
+    "build:ts": "tsc"
   },
   "devDependencies": {
     "@effect/platform-node": "^0.54.3",
@@ -17,7 +21,11 @@
     "effect-http": "^0.75.0",
     "effect-http-node": "^0.17.1",
     "eslint": "^9.7.0",
+    "forever": "^4.0.3",
+    "nodemon": "^3.1.4",
     "prettier": "^3.2.5",
+    "tsx": "^4.16.2",
+    "turbo": "^2.0.9",
     "typescript": "^5.4.5",
     "typescript-eslint": "^7.16.1"
   },
@@ -26,6 +34,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@effect/platform": "^0.59.2",
     "@effect/schema": "^0.68.26",
     "@google-cloud/functions-framework": "^3.4.1",
     "effect": "^3.5.6"

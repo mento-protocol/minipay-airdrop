@@ -1,0 +1,20 @@
+{
+  "ui": "tui",
+  "tasks": {
+    "dev": {
+      "dependsOn": ["build:ts"],
+      "cache": false,
+      "persistent": true
+    },
+    "build:ts": {
+      "inputs": ["src/**"],
+      "outputs": ["dist/**"]
+    },
+    "build:watch": {
+      "inputs": ["src/**"],
+      "outputs": ["dist/**"],
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

@@ -18,5 +18,11 @@
     "strict": true,
     "target": "ES2022"
   },
-  "exclude": ["src/mock-server/*"]
+  "ts-node": {
+    "esm": true,
+    "compilerOptions": {
+      "module": "nodenext"
+    }
+  },
+  "exclude": ["src/mock-server/*", "dist/*"]
 }
