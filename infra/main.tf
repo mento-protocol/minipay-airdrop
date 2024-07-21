@@ -5,6 +5,10 @@ terraform {
       source  = "hashicorp/google"
       version = ">= 5.38.0"
     }
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = ">= 5.38.0"
+    }
     random = {
       source  = "hashicorp/random"
       version = "3.6.2"
@@ -12,7 +16,31 @@ terraform {
   }
 }
 
+variable "functions" {
+  type = map(string)
+  default = {
+    get_allocation = "getAllocation"
+  }
+}
+
+variable "region" {
+  type    = string
+  default = "us-central1"
+}
+
+variable "project_id" {
+  type    = string
+  default = "mento-prod"
+
+}
+
 provider "google" {
+  project     = var.project_id
+  region      = var.region
+  credentials = "credentials.json"
+}
+
+provider "google-beta" {
   project     = "mento-prod"
   credentials = "credentials.json"
 }
@@ -21,10 +49,12 @@ resource "random_id" "default" {
   byte_length = 8
 }
 
+// trunk-ignore(trivy/AVD-GCP-0066)
 resource "google_storage_bucket" "default" {
   name                        = "${random_id.default.hex}-minipay-cloud-fn-source" # Every bucket name must be globally unique
   location                    = "US"
   uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
 }
 
 locals {
@@ -38,13 +68,6 @@ resource "null_resource" "clean_staging" {
   }
   provisioner "local-exec" {
     command = "rm -rf ../.staging && mkdir ../.staging"
-  }
-}
-
-variable "functions" {
-  type = map(string)
-  default = {
-    checkpoint_balances = "checkpointBalances"
   }
 }
 
@@ -105,9 +128,11 @@ resource "google_cloudfunctions2_function" "functions" {
   }
 
   service_config {
-    max_instance_count = 1
+    max_instance_count = 5
+    min_instance_count = 1
     available_memory   = "256M"
     timeout_seconds    = 60
+    ingress_settings   = "ALLOW_INTERNAL_AND_GCLB"
   }
 
   labels = {
@@ -116,6 +141,21 @@ resource "google_cloudfunctions2_function" "functions" {
   }
 
   depends_on = [google_storage_bucket_object.source]
+}
+
+resource "google_cloud_run_service_iam_member" "public-access" {
+  for_each = var.functions
+  location = google_cloudfunctions2_function.functions[each.key].location
+  service  = google_cloudfunctions2_function.functions[each.key].service_config[0].service
+  project  = var.project_id
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+
+  depends_on = [google_cloudfunctions2_function.functions]
+
+  lifecycle {
+    replace_triggered_by = [google_cloudfunctions2_function.functions[each.key]]
+  }
 }
 
 output "function_uris" {

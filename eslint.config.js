@@ -1,48 +1,11 @@
-const { resolve } = require("node:path");
-const globals = require("globals");
+// @ts-check
+import eslint from "@eslint/js";
+import tseslint from "typescript-eslint";
 
-const prettier = require("eslint-config-prettier");
-const turbo = require("eslint-plugin-turbo");
-const onlyWarn = require("eslint-plugin-only-warn");
-const js = require("@eslint/js");
-
-const project = resolve(process.cwd(), "tsconfig.json");
-
-/** @type {import("eslint").Linter.Config} */
-module.exports = [
-  js.configs.recommended,
-  prettier,
+export default tseslint.config(
+  eslint.configs.recommended,
+  ...tseslint.configs.recommended,
   {
-    ...turbo.configs.recommended,
-    plugins: {
-      turbo,
-    },
+    ignores: [".staging/*", "dist/*"],
   },
-  {
-    plugins: {
-      onlyWarn,
-    },
-    languageOptions: {
-      ecmaVersion: 2022,
-      sourceType: "module",
-      globals: {
-        require: true,
-        module: true,
-      },
-    },
-    settings: {
-      "import/resolver": {
-        typescript: {
-          project,
-        },
-      },
-    },
-    ignores: [
-      // Ignore dotfiles
-      ".*.js",
-      "node_modules/",
-      "dist/",
-      "eslint.config.js",
-    ],
-  },
-];
+);
