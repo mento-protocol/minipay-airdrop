@@ -36,11 +36,11 @@ yarn-error.log*
 .DS_Store
 *.pem
 .tool-versions
-.staging
 
 # Env
 .env.local
 
 # Terraform
-.terraform
+infra/.terraform
+.staging
 
