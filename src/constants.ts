@@ -1,0 +1,1 @@
+export const CAMPAIGN_START_BLOCK = 26700546;
