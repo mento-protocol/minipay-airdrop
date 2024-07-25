@@ -1,25 +1,19 @@
+import { HttpFunction } from "@google-cloud/functions-framework";
+import { HttpApp } from "@effect/platform";
+import { RouterBuilder } from "effect-http";
+import { Effect, pipe } from "effect";
+import { convertIncomingMessageToRequest, randAlloc } from "../utils.js";
+import { NodeContext } from "@effect/platform-node";
+import { NodeSwaggerFiles } from "effect-http-node";
 import { Schema } from "@effect/schema";
 import { Api } from "effect-http";
-
-export const Address = Schema.TemplateLiteral(
-  Schema.Literal("0x"),
-  Schema.String,
-).pipe(
-  Schema.filter((s) =>
-    /^0x[a-fA-F0-9]*$/.exec(s)
-      ? undefined
-      : "Address must be a 0x prefixed hexadecimal string",
-  ),
-  Schema.filter((s) =>
-    s.length == 42 ? undefined : "address must pe 42 characters (including 0x)",
-  ),
-);
-
-export type Address = Schema.Schema.Type<typeof Address>;
+import { Address } from "../schema.js";
+import { getAllocation } from "../operations/get-allocation.js";
 
 const GetAllocationResponse = Schema.Struct({
   address: Address,
   total: Schema.Number,
+  refreshedAt: Schema.Number,
   byTask: Schema.Struct({
     hold: Schema.Number,
     transfer: Schema.Number,
@@ -44,7 +38,6 @@ export const api = Api.make({ title: "Minipay Airdrop Allocation API" }).pipe(
       - 0xc9D04AFEa3d50632Cd0ad879E858F043d17407Ae will fail with 500 Internal Server Error.
       - 0x556DDc9381dF097C4946De438a4272ECba26A496 will return an empty allocation.
       - <any address> will return a random allocation
-      
       `,
     }).pipe(
       Api.setResponseBody(GetAllocationResponse),
@@ -52,3 +45,24 @@ export const api = Api.make({ title: "Minipay Airdrop Allocation API" }).pipe(
     ),
   ),
 );
+
+const externalApp = pipe(
+  RouterBuilder.make(api, { enableDocs: false }),
+  RouterBuilder.handle("allocation", ({ path: { address } }) => {
+    return Effect.succeed(randAlloc(address));
+    // return getAllocation(address).pipe(
+    // )
+  }),
+  RouterBuilder.build,
+);
+
+export const handler = externalApp.pipe(
+  Effect.provide(NodeSwaggerFiles.SwaggerFilesLive),
+  Effect.provide(NodeContext.layer),
+  HttpApp.toWebHandler,
+);
+
+export const external: HttpFunction = async (req, res) => {
+  const res2 = await handler(convertIncomingMessageToRequest(req));
+  res.status(res2.status).send(await res2.text());
+};

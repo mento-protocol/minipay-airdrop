@@ -1,14 +1,17 @@
 import { Request as ExpressRequest } from "@google-cloud/functions-framework";
-import { Address, GetAllocationResponse } from "./api.js";
+import { GetAllocationResponse } from "./functions/external.js";
+import { Address } from "./schema.js";
 
 export const alloc = (
   address: Address,
   hold: number,
   transfer: number,
+  refreshedAt?: number,
 ): GetAllocationResponse => ({
   address,
   total: hold + transfer,
   byTask: { hold, transfer },
+  refreshedAt: refreshedAt ? refreshedAt : Date.now(),
 });
 
 export const randAlloc = (address: Address): GetAllocationResponse => {
@@ -23,9 +26,10 @@ export const convertIncomingMessageToRequest = (
   for (const key in req.headers) {
     if (req.headers[key]) headers.append(key, req.headers[key] as string);
   }
+
   const request = new Request(url, {
     method: req.method,
-    body: req.method === "POST" ? req.body : null,
+    body: req.method === "POST" ? req.rawBody!.toString() : null,
     headers,
   });
   return request;

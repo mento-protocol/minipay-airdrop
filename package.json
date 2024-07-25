@@ -8,8 +8,10 @@
     "pnpm-lock.yaml"
   ],
   "scripts": {
-    "dev": "nodemon node_modules/@google-cloud/functions-framework/build/src/main.js -- --target=getAllocation",
+    "dev:internal": "./bin/run-function-emulator.sh internal 3001",
+    "dev:external": "./bin/run-function-emulator.sh external 3000",
     "dev:fe": "tsx src/mock-server.ts",
+    "pad": "tsx --env-file=.env.local ./src/dev/pad.ts",
     "build:watch": "tsc --watch",
     "build:ts": "tsc"
   },
@@ -21,6 +23,7 @@
     "@eslint/js": "^9.7.0",
     "@trunkio/launcher": "^1.3.1",
     "@types/eslint__js": "^8.42.3",
+    "@types/redis": "^4.0.11",
     "dotenv": "^16.4.5",
     "eslint": "^9.7.0",
     "forever": "^4.0.3",
@@ -36,8 +39,11 @@
     "@effect/platform-node": "^0.54.3",
     "@effect/schema": "^0.68.26",
     "@google-cloud/functions-framework": "^3.4.1",
+    "@google-cloud/tasks": "^5.5.0",
+    "@grpc/grpc-js": "^1.11.1",
     "effect": "^3.5.6",
     "effect-http": "^0.75.0",
-    "effect-http-node": "^0.17.1"
+    "effect-http-node": "^0.17.1",
+    "redis": "^4.6.15"
   }
 }

@@ -8,8 +8,8 @@ import {
   tooManyRequests,
 } from "effect-http/HttpError";
 
-import { api } from "./api.js";
-import { alloc, randAlloc } from "./utils.js";
+import { api } from "../functions/external.js";
+import { alloc, randAlloc } from "../utils.js";
 
 const app = RouterBuilder.make(api).pipe(
   RouterBuilder.handle("allocation", ({ path: { address } }) => {

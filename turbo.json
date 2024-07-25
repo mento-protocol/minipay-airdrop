@@ -1,7 +1,12 @@
 {
-  "ui": "tui",
+  "ui": "stream",
   "tasks": {
-    "dev": {
+    "dev:external": {
+      "dependsOn": ["build:ts"],
+      "cache": false,
+      "persistent": true
+    },
+    "dev:internal": {
       "dependsOn": ["build:ts"],
       "cache": false,
       "persistent": true
