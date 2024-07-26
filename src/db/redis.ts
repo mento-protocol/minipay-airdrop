@@ -4,7 +4,7 @@ import { AllocationQueryRow } from "../dune/api.js";
 import { createClient, RedisClientType } from "redis";
 import { REDIS_INSERT_CONCURRENCY } from "../constants.js";
 
-const { promise, map, flatMap, tap } = Effect;
+const { promise, map, flatMap } = Effect;
 
 type EffectifyOption<F> = F extends (
   ...args: infer TArgs

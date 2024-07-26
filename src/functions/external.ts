@@ -8,7 +8,6 @@ import { NodeSwaggerFiles } from "effect-http-node";
 import { Schema } from "@effect/schema";
 import { Api } from "effect-http";
 import { Address } from "../schema.js";
-import { getAllocation } from "../operations/get-allocation.js";
 
 const GetAllocationResponse = Schema.Struct({
   address: Address,
