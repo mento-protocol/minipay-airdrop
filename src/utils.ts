@@ -1,4 +1,7 @@
-import { Request as ExpressRequest } from "@google-cloud/functions-framework";
+import {
+  Request as ExpressRequest,
+  HttpFunction,
+} from "@google-cloud/functions-framework";
 import { GetAllocationResponse } from "./entry/external.js";
 import { Address } from "./schema.js";
 
@@ -33,4 +36,28 @@ export const convertIncomingMessageToRequest = (
     headers,
   });
   return request;
+};
+
+export const convertToHttpFunction = (
+  handler: (request: Request) => Promise<Response>,
+): HttpFunction => {
+  return async (req, res) => {
+    if (process.env.NODE_ENV) {
+      res.set("Access-Control-Allow-Origin", "minipay.mento.org");
+    } else {
+      res.set("Access-Control-Allow-Origin", "localhost");
+    }
+    if (req.method == "OPTIONS") {
+      // Send response to OPTIONS requests
+      res.set("Access-Control-Allow-Methods", "GET");
+      res.set("Access-Control-Allow-Headers", "Content-Type");
+      res.set("Access-Control-Max-Age", "3600");
+      res.status(204).send("");
+    } else {
+      const { status, text } = await handler(
+        convertIncomingMessageToRequest(req),
+      );
+      res.status(status).send(await text());
+    }
+  };
 };

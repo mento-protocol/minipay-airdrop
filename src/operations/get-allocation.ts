@@ -7,13 +7,21 @@ import {
 import { notFound } from "effect-http/HttpError";
 import { alloc } from "../utils.js";
 
+export const noAllocation = () => {
+  return notFound(JSON.stringify({ error: "no-allocation" }));
+};
+
+export const noExecution = () => {
+  return notFound(JSON.stringify({ error: "no-latest-execution" }));
+};
+
 export const getAllocation = (address: Address) =>
   Effect.gen(function* () {
     const latest = yield* getLatestExecution.pipe(
       Effect.flatMap(
         Option.match({
           onSome: (v) => Effect.succeed(v),
-          onNone: () => Effect.fail(notFound("no-latest-execution")),
+          onNone: () => Effect.fail(noExecution()),
         }),
       ),
     );
@@ -37,6 +45,6 @@ export const getAllocation = (address: Address) =>
         ),
       );
     } else {
-      return Effect.fail(notFound("no-allocation"));
+      return Effect.fail(noAllocation());
     }
   });

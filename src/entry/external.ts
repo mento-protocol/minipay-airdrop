@@ -1,5 +1,5 @@
 import { HttpFunction } from "@google-cloud/functions-framework";
-import { HttpApp } from "@effect/platform";
+import { HttpApp, HttpMiddleware } from "@effect/platform";
 import { RouterBuilder } from "effect-http";
 import { Effect, pipe } from "effect";
 import { convertIncomingMessageToRequest, randAlloc } from "../utils.js";
@@ -36,6 +36,8 @@ export const api = Api.make({ title: "Minipay Airdrop Allocation API" }).pipe(
       - 0x11815DeF716bFC4a394a32Ea41a981f3aC56D0d9 will be rate limited 50% of the time, good for testing retries.
       - 0xc9D04AFEa3d50632Cd0ad879E858F043d17407Ae will fail with 500 Internal Server Error.
       - 0x556DDc9381dF097C4946De438a4272ECba26A496 will return an empty allocation.
+      - 0x126996CEFe1b367C66475b7A6208B6b6f0fD5648 will fail with 404 and no-latest-execution error
+      - 0xcad0ca3bD13E50e1Bd30fE64A4fBc16CAE6cbD31 will fail with 404 and no-allocation error
       - <any address> will return a random allocation
       `,
     }).pipe(
@@ -53,6 +55,10 @@ const externalApp = pipe(
     // )
   }),
   RouterBuilder.build,
+  HttpMiddleware.cors({
+    allowedOrigins: ["*"],
+    allowedMethods: ["GET", "OPTIONS"],
+  }),
 );
 
 export const handler = externalApp.pipe(
