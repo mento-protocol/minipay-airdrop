@@ -16,13 +16,6 @@ terraform {
   }
 }
 
-variable "functions" {
-  type = map(string)
-  default = {
-    get_allocation = "getAllocation"
-  }
-}
-
 variable "region" {
   type    = string
   default = "us-central1"
@@ -31,137 +24,95 @@ variable "region" {
 variable "project_id" {
   type    = string
   default = "mento-prod"
-
 }
 
-provider "google" {
-  project     = var.project_id
-  region      = var.region
-  credentials = "credentials.json"
+module "build" {
+  source = "./build-source"
 }
+
+module "internal_cf" {
+  source         = "./cloud-function"
+  region         = var.region
+  project_id     = var.project_id
+  entry_point    = "internal"
+  source_package = module.build.package
+  release        = module.build.release
+  name           = "minipay-api-internal"
+  description    = <<EOF
+  Internal API for running the tasks that import data from Dune into Redis to be served by the external API
+  EOF
+  env_vars = {
+    GOOGLE_PROJECT           = var.project_id
+    GOOGLE_LOCATION          = var.region
+    GOOGLE_TASK_QUEUE        = "todo"
+    IMPORT_TASK_URL          = "todo"
+    DUNE_API_KEY             = "todo"
+    REDIS_INSERT_CONCURRENCY = "10000"
+    IMPORT_BATCH_SIZE        = "30000"
+  }
+  service_config = {
+    max_instance_count = 10
+    min_instance_count = 0
+    available_memory   = "256M"
+    timeout_seconds    = 60
+    ingress_settings   = "ALLOW_INTERNAL_ONLY"
+  }
+}
+
+module "external_cf" {
+  source         = "./cloud-function"
+  region         = var.region
+  project_id     = var.project_id
+  entry_point    = "external"
+  source_package = module.build.package
+  release        = module.build.release
+  name           = "minipay-api-external"
+  description    = <<EOF
+  External API for getting the MiniPay airdrop allocation.
+  EOF
+  service_config = {
+    max_instance_count = 10
+    min_instance_count = 1
+    available_memory   = "256M"
+    timeout_seconds    = 60
+    ingress_settings   = "ALLOW_INTERNAL_AND_GCLB"
+  }
+}
+
+
+output "build" {
+  value = {
+    id      = module.build.build_id,
+    release = module.build.release,
+    package = module.build.package
+  }
+}
+
+// provider "google" {
+//   project     = var.project_id
+//   region      = var.region
+//   credentials = "credentials.json"
+// }
 
 provider "google-beta" {
   project     = "mento-prod"
   credentials = "credentials.json"
 }
 
-resource "random_id" "default" {
-  byte_length = 8
-}
+// 
+// locals {
+//   package = jsondecode(file("../package.json"))
+//   release = "${local.package.name}-${local.package.version}"
+// }
+// 
+// 
+// 
 
-// trunk-ignore(trivy/AVD-GCP-0066)
-resource "google_storage_bucket" "default" {
-  name                        = "${random_id.default.hex}-minipay-cloud-fn-source" # Every bucket name must be globally unique
-  location                    = "US"
-  uniform_bucket_level_access = true
-  public_access_prevention    = "enforced"
-}
-
-locals {
-  package = jsondecode(file("../package.json"))
-  release = "${local.package.name}-${local.package.version}"
-}
-
-resource "null_resource" "clean_staging" {
-  triggers = {
-    always_run = timestamp()
-  }
-  provisioner "local-exec" {
-    command = "rm -rf ../.staging && mkdir ../.staging"
-  }
-}
-
-resource "null_resource" "build_and_pack" {
-  triggers = {
-    always_run = timestamp()
-  }
-  depends_on = [null_resource.clean_staging]
-
-  provisioner "local-exec" {
-    command = "pnpm tsc && pnpm pack --pack-destination .staging"
-  }
-}
-
-resource "null_resource" "unpack" {
-  triggers = {
-    always_run = timestamp()
-  }
-  depends_on = [null_resource.build_and_pack]
-
-  provisioner "local-exec" {
-    command = "cd ../.staging && tar -zxvf ${local.release}.tgz"
-  }
-}
-
-data "archive_file" "source" {
-  type        = "zip"
-  output_path = "../.staging/${local.release}.zip"
-  source_dir  = "../.staging/package"
-  depends_on  = [null_resource.unpack]
-}
-
-resource "google_storage_bucket_object" "source" {
-  name   = "${local.release}-${data.archive_file.source.output_sha}.zip"
-  bucket = google_storage_bucket.default.name
-  source = data.archive_file.source.output_path
-}
-
-resource "google_cloudfunctions2_function" "functions" {
-  for_each    = var.functions
-  name        = each.key
-  location    = "us-central1"
-  description = "minipay-airdrop-function"
-
-  build_config {
-    runtime     = "nodejs20"
-    entry_point = each.value
-    environment_variables = {
-      # Causes a re-deploy of the function when the source changes
-      "SOURCE_SHA" = data.archive_file.source.output_sha
-    }
-    source {
-      storage_source {
-        bucket = google_storage_bucket.default.name
-        object = google_storage_bucket_object.source.name
-      }
-    }
-  }
-
-  service_config {
-    max_instance_count = 5
-    min_instance_count = 1
-    available_memory   = "256M"
-    timeout_seconds    = 60
-    ingress_settings   = "ALLOW_INTERNAL_AND_GCLB"
-  }
-
-  labels = {
-    deployment-tool = "terraform",
-    version-sha     = data.archive_file.source.output_sha
-  }
-
-  depends_on = [google_storage_bucket_object.source]
-}
-
-resource "google_cloud_run_service_iam_member" "public-access" {
-  for_each = var.functions
-  location = google_cloudfunctions2_function.functions[each.key].location
-  service  = google_cloudfunctions2_function.functions[each.key].service_config[0].service
-  project  = var.project_id
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-
-  depends_on = [google_cloudfunctions2_function.functions]
-
-  lifecycle {
-    replace_triggered_by = [google_cloudfunctions2_function.functions[each.key]]
-  }
-}
 
 output "function_uris" {
   value = {
-    for k, v in var.functions : k => google_cloudfunctions2_function.functions[k].service_config[0].uri
+    internal = module.internal_cf.function_uri
+    external = module.external_cf.function_uri
   }
-  depends_on = [google_cloudfunctions2_function.functions]
 }
-
+// 

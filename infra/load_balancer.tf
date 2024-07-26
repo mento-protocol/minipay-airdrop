@@ -1,3 +1,13 @@
+resource "google_compute_region_network_endpoint_group" "external_endpoint_group" {
+  provider              = google-beta
+  name                  = "minipay-external-api"
+  network_endpoint_type = "SERVERLESS"
+  region                = var.region
+  cloud_function {
+    function = module.external_cf.function_name
+  }
+}
+
 module "lb-http" {
   source  = "terraform-google-modules/lb-http/google//modules/serverless_negs"
   version = "~> 10.0"
@@ -14,7 +24,7 @@ module "lb-http" {
       description = ""
       groups = [
         {
-          group = google_compute_region_network_endpoint_group.serverless_neg.id
+          group = google_compute_region_network_endpoint_group.external_endpoint_group.id
         }
       ]
       enable_cdn = false
@@ -29,12 +39,3 @@ module "lb-http" {
   }
 }
 
-resource "google_compute_region_network_endpoint_group" "serverless_neg" {
-  provider              = google-beta
-  name                  = "serverless-neg"
-  network_endpoint_type = "SERVERLESS"
-  region                = var.region
-  cloud_function {
-    function = google_cloudfunctions2_function.functions["get_allocation"].name
-  }
-}
