@@ -8,19 +8,33 @@ import {
 } from "../constants.js";
 import { Effect } from "effect";
 
-const client = new CloudTasksClient({
-  port: 9999,
-  servicePath: "localhost",
-  sslCreds: credentials.createInsecure(),
-});
-const queue = client.queuePath(
-  GOOGLE_PROJECT,
-  GOOGLE_LOCATION,
-  GOOGLE_TASK_QUEUE,
-);
+let _client: CloudTasksClient | undefined;
+let _queue: string | undefined;
+
+const getClientAndQueue = () => {
+  if (_client == undefined) {
+    if (process.env.NODE_ENV == "development") {
+      _client = new CloudTasksClient({
+        port: 9999,
+        servicePath: "localhost",
+        sslCreds: credentials.createInsecure(),
+      });
+    } else {
+      _client = new CloudTasksClient();
+    }
+    _queue = _client.queuePath(
+      GOOGLE_PROJECT,
+      GOOGLE_LOCATION,
+      GOOGLE_TASK_QUEUE,
+    );
+  }
+
+  return { client: _client, queue: _queue };
+};
 
 export const createImportTask = (payload: object) =>
   Effect.gen(function* () {
+    const { client, queue } = getClientAndQueue();
     const task = {
       httpRequest: {
         httpMethod: "POST",
