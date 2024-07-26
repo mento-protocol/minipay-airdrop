@@ -41,6 +41,10 @@ variable "name" {
   type = string
 }
 
+variable "vpc_connector" {
+  type = string
+}
+
 variable "source_package" {
   type = string
 }
@@ -112,6 +116,7 @@ resource "google_cloudfunctions2_function" "function" {
   }
 
   service_config {
+    vpc_connector      = var.vpc_connector
     max_instance_count = var.service_config.max_instance_count
     min_instance_count = var.service_config.min_instance_count
     available_memory   = var.service_config.available_memory

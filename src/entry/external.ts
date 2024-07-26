@@ -7,6 +7,8 @@ import { NodeSwaggerFiles } from "effect-http-node";
 import { Schema } from "@effect/schema";
 import { Api } from "effect-http";
 import { Address } from "../schema.js";
+import { getAllocation } from "../operations/get-allocation.js";
+import { Redis } from "../services/redis.js";
 
 const GetAllocationResponse = Schema.Struct({
   address: Address,
@@ -49,9 +51,7 @@ export const api = Api.make({ title: "Minipay Airdrop Allocation API" }).pipe(
 const externalApp = pipe(
   RouterBuilder.make(api, { enableDocs: false }),
   RouterBuilder.handle("allocation", ({ path: { address } }) => {
-    return Effect.succeed(randAlloc(address));
-    // return getAllocation(address).pipe(
-    // )
+    return getAllocation(address).pipe(Effect.provide(Redis.live));
   }),
   RouterBuilder.build,
 );

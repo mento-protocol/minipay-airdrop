@@ -36,7 +36,11 @@ export class Redis extends Context.Tag("Redis")<
   static readonly live = Layer.effect(
     Redis,
     pipe(
-      promise(() => createClient().connect()),
+      promise(() =>
+        createClient({
+          url: process.env.REDIS_URL!,
+        }).connect(),
+      ),
       Effect.orDie,
       map((client) =>
         Redis.of({

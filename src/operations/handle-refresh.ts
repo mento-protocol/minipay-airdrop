@@ -13,6 +13,7 @@ import {
 import { LatestQueryResultsResponse, StatsQueryRow } from "../services/dune.js";
 import { Schema } from "@effect/schema";
 import { createImportTask } from "../services/tasks.js";
+import { serviceUnavailable } from "effect-http/HttpError";
 
 const { andThen, flatMap, retry, fail, sleep } = Effect;
 
@@ -119,9 +120,11 @@ export const handleRefresh = Effect.gen(function* () {
     execution.value.importFinished === false &&
     Duration.greaterThan(
       Duration.millis(Date.now() - execution.value.timestamp),
-      Duration.decode("1 minute"),
+      Duration.decode("30 minutes"),
     )
   ) {
     yield* startImport(latestDuneExecution);
+  } else {
+    yield* serviceUnavailable();
   }
 });
