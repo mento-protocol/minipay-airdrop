@@ -3,6 +3,7 @@ import { Api, QuerySchema } from "effect-http";
 import { Address } from "../schema.js";
 import { Client } from "effect-http";
 import { DUNE_API_BASE_URL, DUNE_API_KEY } from "../constants.js";
+import { Effect, pipe, Schedule } from "effect";
 
 export const DuneAuthHeaders = Schema.Struct({
   "X-DUNE-API-KEY": Schema.String.pipe(Schema.optional()),
@@ -138,11 +139,18 @@ export const latestQueryResults = (
   limit: number,
   offset?: number,
 ) => {
-  return client.latestQueryResults({
-    path: { queryId },
-    query: { limit, offset },
-    headers: authHeader,
-  });
+  return client
+    .latestQueryResults({
+      path: { queryId },
+      query: { limit, offset },
+      headers: authHeader,
+    })
+    .pipe(
+      Effect.retry({
+        while: (e) => e.side == "server",
+        schedule: Schedule.addDelay(Schedule.recurs(2), () => "500 millis"),
+      }),
+    );
 };
 
 export const getExectionResults = (
@@ -150,16 +158,30 @@ export const getExectionResults = (
   limit: number,
   offset?: number,
 ) => {
-  return client.getExecutionResult({
-    path: { executionId },
-    query: { limit, offset },
-    headers: authHeader,
-  });
+  return client
+    .getExecutionResult({
+      path: { executionId },
+      query: { limit, offset },
+      headers: authHeader,
+    })
+    .pipe(
+      Effect.retry({
+        while: (e) => e.side == "server",
+        schedule: Schedule.addDelay(Schedule.recurs(2), () => "500 millis"),
+      }),
+    );
 };
 
 export const executeQuery = (queryId: number) => {
-  return client.executeQuery({
-    path: { queryId },
-    headers: authHeader,
-  });
+  return client
+    .executeQuery({
+      path: { queryId },
+      headers: authHeader,
+    })
+    .pipe(
+      Effect.retry({
+        while: (e) => e.side == "server",
+        schedule: Schedule.addDelay(Schedule.recurs(2), () => "500 millis"),
+      }),
+    );
 };

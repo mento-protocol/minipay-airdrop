@@ -11,7 +11,10 @@ import { Effect } from "effect";
 let _client: CloudTasksClient | undefined;
 let _queue: string | undefined;
 
-const getClientAndQueue = () => {
+export const getClientAndQueue: () => {
+  client: CloudTasksClient;
+  queue: string;
+} = () => {
   if (_client == undefined) {
     if (process.env.NODE_ENV == "development") {
       _client = new CloudTasksClient({
@@ -29,7 +32,7 @@ const getClientAndQueue = () => {
     );
   }
 
-  return { client: _client, queue: _queue };
+  return { client: _client!, queue: _queue! };
 };
 
 export const createImportTask = (payload: object) =>

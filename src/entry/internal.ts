@@ -1,4 +1,4 @@
-import { HttpApp } from "@effect/platform";
+import { HttpApp, HttpMiddleware } from "@effect/platform";
 import { Api, RouterBuilder } from "effect-http";
 import { Console, Effect, pipe } from "effect";
 import { toCloudFunctionHandler } from "../utils.js";
@@ -57,6 +57,7 @@ const internalApp = pipe(
 );
 
 export const internal = internalApp.pipe(
+  HttpMiddleware.logger,
   Effect.provide(NodeSwaggerFiles.SwaggerFilesLive),
   Effect.provide(NodeContext.layer),
   HttpApp.toWebHandler,

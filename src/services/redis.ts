@@ -192,6 +192,12 @@ export const incrementAllocationsImported = (
     ),
   );
 
+export const resetAllocationsImported = (executionId: string) =>
+  pipe(
+    Redis,
+    Effect.flatMap((r) => r.DEL(`execution:${executionId}:rows-imported`)),
+  );
+
 export const getAllocation = (executionId: string, address: string) =>
   pipe(
     Redis,

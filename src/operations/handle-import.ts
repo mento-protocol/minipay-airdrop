@@ -11,6 +11,7 @@ import {
 
 export const handleImport = (params: ImportBody) =>
   Effect.gen(function* () {
+    yield* Effect.log("starting import");
     const results = yield* getExectionResults(
       params.executionId,
       params.limit,
@@ -26,8 +27,7 @@ export const handleImport = (params: ImportBody) =>
       rows.length,
     );
     const execution = yield* getExecution(params.executionId);
-    console.log(execution);
-    console.log(totalRowsImported);
+
     if (Option.isSome(execution)) {
       if (totalRowsImported == execution.value.rows) {
         // We've finished the import, yey!
@@ -42,4 +42,4 @@ export const handleImport = (params: ImportBody) =>
       );
     }
     return Effect.succeedNone;
-  });
+  }).pipe(Effect.annotateLogs(params));

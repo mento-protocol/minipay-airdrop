@@ -54,13 +54,14 @@ const externalApp = pipe(
     // )
   }),
   RouterBuilder.build,
+);
+
+export const external = externalApp.pipe(
   HttpMiddleware.cors({
     allowedOrigins: ["*"],
     allowedMethods: ["GET", "OPTIONS"],
   }),
-);
-
-export const external = externalApp.pipe(
+  HttpMiddleware.logger,
   Effect.provide(NodeSwaggerFiles.SwaggerFilesLive),
   Effect.provide(NodeContext.layer),
   HttpApp.toWebHandler,

@@ -1,78 +1,69 @@
-import {
-  Console,
-  Effect,
-  Match,
-  Option,
-  pipe,
-  Schedule,
-  Either,
-  Duration,
-} from "effect";
+import { Effect, Option, pipe, Schedule, Either, Duration } from "effect";
 import { executeQuery, latestQueryResults } from "../services/dune.js";
 import {
   DUNE_AIRDROP_QUERY_ID,
   DUNE_AIRDROP_STATS_QUERY_ID,
   IMPORT_BATCH_SIZE,
 } from "../constants.js";
-import { getExecution, saveExecution } from "../services/redis.js";
+import {
+  getExecution,
+  resetAllocationsImported,
+  saveExecution,
+} from "../services/redis.js";
 import { LatestQueryResultsResponse, StatsQueryRow } from "../services/dune.js";
 import { Schema } from "@effect/schema";
 import { createImportTask } from "../services/tasks.js";
 
-const { andThen, flatMap, map, retry, fail, succeed, sleep, tap } = Effect;
-const { log } = Console;
-const { value, when, orElse } = Match;
+const { andThen, flatMap, retry, fail, sleep } = Effect;
+
+const failIfSameExecution =
+  (executionId: string) => (query: LatestQueryResultsResponse) =>
+    Effect.gen(function* () {
+      if (query.execution_id == executionId) {
+        yield* Effect.log("query hasn't finised, retrying...");
+        yield* fail("not-refreshed");
+      }
+
+      return query;
+    });
 
 export const getAirdropStats = (staleIfOlderThan: Date) =>
-  latestQueryResults(DUNE_AIRDROP_STATS_QUERY_ID, 1, 0).pipe(
-    flatMap((query) => {
-      if (query.execution_started_at.getTime() < staleIfOlderThan.getTime()) {
-        return pipe(
-          log("Stats are stale, re-execution"),
-          andThen(executeQuery(DUNE_AIRDROP_STATS_QUERY_ID)),
-          andThen(sleep("1 second")),
-          andThen(
-            latestQueryResults(DUNE_AIRDROP_STATS_QUERY_ID, 1, 0).pipe(
-              flatMap((newQuery) =>
-                value(newQuery).pipe(
-                  when({ execution_id: query.execution_id }, () =>
-                    fail("not-refreshed"),
-                  ),
-                  orElse((q) => succeed(q)),
-                ),
+  Effect.gen(function* () {
+    let stats = yield* latestQueryResults(DUNE_AIRDROP_STATS_QUERY_ID, 1, 0);
+    if (stats.execution_started_at.getTime() < staleIfOlderThan.getTime()) {
+      yield* Effect.log("Stats query is stale, reexcuting");
+      stats = yield* pipe(
+        executeQuery(DUNE_AIRDROP_STATS_QUERY_ID),
+        andThen(sleep("1 second")),
+        andThen(
+          pipe(
+            latestQueryResults(DUNE_AIRDROP_STATS_QUERY_ID, 1, 0),
+            flatMap(failIfSameExecution(stats.execution_id)),
+            retry({
+              while: (e) => e == "not-refreshed",
+              schedule: Schedule.addDelay(
+                Schedule.recurs(5),
+                () => "1 seconds",
               ),
-              retry({
-                while: (e) => e == "not-refreshed",
-                schedule: Schedule.addDelay(
-                  Schedule.recurs(5),
-                  () => "1 seconds",
-                ),
-              }),
-            ),
+            }),
           ),
-        );
-      } else {
-        return succeed(query);
-      }
-    }),
-    map((query) =>
-      Either.fromNullable(query.result.rows[0], () => "row-missing"),
-    ),
-    tap(log),
-    map(Either.flatMap(Schema.decodeUnknownEither(StatsQueryRow))),
-    tap(log),
-    flatMap(
-      Either.match({
-        onRight: (r) =>
-          Effect.succeed({
-            block: r.block,
-            recipients: r.recipients,
-            mentoAllocated: r.total_mento_earned,
-          }),
-        onLeft: (e) => Effect.die(e), // Very unexpected, we die :(
-      }),
-    ),
-  );
+        ),
+      );
+    } else {
+      yield* Effect.log("Stats are not stale");
+    }
+
+    return pipe(
+      Either.fromNullable(stats.result.rows[0], () => "row-missing"),
+      Either.flatMap(Schema.decodeUnknownEither(StatsQueryRow)),
+      Either.map((r) => ({
+        block: r.block,
+        recipients: r.recipients,
+        mentoAllocated: r.total_mento_earned,
+      })),
+      Either.getOrThrow,
+    );
+  });
 
 const scheduleBatch = (
   execution: LatestQueryResultsResponse,
@@ -102,7 +93,9 @@ const scheduleImportTasks = (execution: LatestQueryResultsResponse) =>
 
 const startImport = (execution: LatestQueryResultsResponse) =>
   Effect.gen(function* () {
+    yield* resetAllocationsImported(execution.execution_id);
     const stats = yield* getAirdropStats(execution.execution_ended_at);
+    yield* Effect.log(`saving execution: ${execution.execution_id}`);
     yield* saveExecution({
       executionId: execution.execution_id,
       timestamp: execution.execution_ended_at.getTime(),
@@ -116,11 +109,10 @@ const startImport = (execution: LatestQueryResultsResponse) =>
 export const handleRefresh = Effect.gen(function* () {
   const latestDuneExecution = yield* latestQueryResults(
     DUNE_AIRDROP_QUERY_ID,
-    1000,
+    1,
     0,
   );
   const execution = yield* getExecution(latestDuneExecution.execution_id);
-  console.log(latestDuneExecution);
   if (Option.isNone(execution)) {
     yield* startImport(latestDuneExecution);
   } else if (
