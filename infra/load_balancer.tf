@@ -9,8 +9,10 @@ resource "google_compute_region_network_endpoint_group" "external_endpoint_group
 }
 
 module "lb-http" {
-  source  = "terraform-google-modules/lb-http/google//modules/serverless_negs"
-  version = "~> 10.0"
+  source          = "terraform-google-modules/lb-http/google//modules/serverless_negs"
+  version         = "~> 10.0"
+  security_policy = module.security_policy.policy.self_link
+
 
   name    = "minipay-lb"
   project = var.project_id

@@ -79,7 +79,6 @@ module "external_cf" {
   }
 }
 
-
 output "build" {
   value = {
     id      = module.build.build_id,
@@ -88,26 +87,10 @@ output "build" {
   }
 }
 
-// provider "google" {
-//   project     = var.project_id
-//   region      = var.region
-//   credentials = "credentials.json"
-// }
-
 provider "google-beta" {
   project     = "mento-prod"
   credentials = "credentials.json"
 }
-
-// 
-// locals {
-//   package = jsondecode(file("../package.json"))
-//   release = "${local.package.name}-${local.package.version}"
-// }
-// 
-// 
-// 
-
 
 output "function_uris" {
   value = {
@@ -115,4 +98,3 @@ output "function_uris" {
     external = module.external_cf.function_uri
   }
 }
-// 
