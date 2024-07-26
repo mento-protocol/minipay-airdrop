@@ -18,20 +18,6 @@ export const latestQueryResults = (
   });
 };
 
-export const latestQueryResultsCSV = (
-  queryId: number,
-  limit: number,
-  offset?: number,
-) => {
-  return client.latestQueryResultsCSV({
-    path: { queryId },
-    query: { limit, offset },
-    headers: {
-      "X-DUNE-API-KEY": DUNE_API_KEY,
-    },
-  });
-};
-
 export const getExectionResults = (
   executionId: string,
   limit: number,

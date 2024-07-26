@@ -10,7 +10,7 @@
   "scripts": {
     "dev:internal": "./bin/run-function-emulator.sh internal 3001",
     "dev:external": "./bin/run-function-emulator.sh external 3000",
-    "dev:fe": "tsx src/mock-server.ts",
+    "dev:mock": "tsx src/mock-server.ts",
     "pad": "tsx --env-file=.env.local ./src/dev/pad.ts",
     "build:watch": "tsc --watch",
     "build:ts": "tsc"
