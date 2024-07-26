@@ -1,7 +1,7 @@
 import { HttpApp, HttpMiddleware } from "@effect/platform";
 import { RouterBuilder } from "effect-http";
 import { Effect, pipe } from "effect";
-import { randAlloc, toCloudFunctionHandler } from "../utils.js";
+import { toCloudFunctionHandler } from "../utils.js";
 import { NodeContext } from "@effect/platform-node";
 import { NodeSwaggerFiles } from "effect-http-node";
 import { Schema } from "@effect/schema";
