@@ -63,7 +63,7 @@ locals {
 resource "null_resource" "build_and_pack" {
   provisioner "local-exec" {
     working_dir = "${path.root}/../"
-    command     = "pnpm tsc && pnpm pack --pack-destination ${local.build_dir}"
+    command     = "rm -rf dist && pnpm tsc && pnpm pack --pack-destination ${local.build_dir}"
   }
 
   depends_on = [random_id.build_id]
