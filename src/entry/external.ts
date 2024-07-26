@@ -1,8 +1,7 @@
-import { HttpFunction } from "@google-cloud/functions-framework";
 import { HttpApp, HttpMiddleware } from "@effect/platform";
 import { RouterBuilder } from "effect-http";
 import { Effect, pipe } from "effect";
-import { convertIncomingMessageToRequest, randAlloc } from "../utils.js";
+import { randAlloc, toCloudFunctionHandler } from "../utils.js";
 import { NodeContext } from "@effect/platform-node";
 import { NodeSwaggerFiles } from "effect-http-node";
 import { Schema } from "@effect/schema";
@@ -61,13 +60,9 @@ const externalApp = pipe(
   }),
 );
 
-export const handler = externalApp.pipe(
+export const external = externalApp.pipe(
   Effect.provide(NodeSwaggerFiles.SwaggerFilesLive),
   Effect.provide(NodeContext.layer),
   HttpApp.toWebHandler,
+  toCloudFunctionHandler,
 );
-
-export const external: HttpFunction = async (req, res) => {
-  const res2 = await handler(convertIncomingMessageToRequest(req));
-  res.status(res2.status).send(await res2.text());
-};

@@ -1,8 +1,7 @@
-import { HttpFunction } from "@google-cloud/functions-framework";
 import { HttpApp } from "@effect/platform";
 import { Api, RouterBuilder } from "effect-http";
 import { Console, Effect, pipe } from "effect";
-import { convertIncomingMessageToRequest } from "../utils.js";
+import { toCloudFunctionHandler } from "../utils.js";
 import { NodeContext } from "@effect/platform-node";
 import { Schema } from "@effect/schema";
 import { handleRefresh } from "../operations/handle-refresh.js";
@@ -57,15 +56,9 @@ const internalApp = pipe(
   RouterBuilder.build,
 );
 
-export const handler = internalApp.pipe(
+export const internal = internalApp.pipe(
   Effect.provide(NodeSwaggerFiles.SwaggerFilesLive),
   Effect.provide(NodeContext.layer),
   HttpApp.toWebHandler,
+  toCloudFunctionHandler,
 );
-
-export const internal: HttpFunction = async (req, res) => {
-  const res2 = await handler(convertIncomingMessageToRequest(req));
-  const resp = await res2.text();
-  console.log(resp);
-  res.status(res2.status).send(resp);
-};

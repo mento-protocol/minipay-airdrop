@@ -1,6 +1,6 @@
 {
   "name": "minipay-airdrop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "dist/index.js",
   "type": "module",
   "files": [
@@ -10,7 +10,7 @@
   "scripts": {
     "dev:internal": "./bin/run-function-emulator.sh internal 3001",
     "dev:external": "./bin/run-function-emulator.sh external 3000",
-    "dev:mock": "tsx src/mock-server.ts",
+    "dev:mock": "tsx src/dev/mock-server.ts",
     "pad": "tsx --env-file=.env.local ./src/dev/pad.ts",
     "build:watch": "tsc --watch",
     "build:ts": "tsc"

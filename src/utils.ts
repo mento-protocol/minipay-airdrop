@@ -38,26 +38,15 @@ export const convertIncomingMessageToRequest = (
   return request;
 };
 
-export const convertToHttpFunction = (
+export const toCloudFunctionHandler = (
   handler: (request: Request) => Promise<Response>,
 ): HttpFunction => {
   return async (req, res) => {
-    if (process.env.NODE_ENV) {
-      res.set("Access-Control-Allow-Origin", "minipay.mento.org");
-    } else {
-      res.set("Access-Control-Allow-Origin", "localhost");
-    }
-    if (req.method == "OPTIONS") {
-      // Send response to OPTIONS requests
-      res.set("Access-Control-Allow-Methods", "GET");
-      res.set("Access-Control-Allow-Headers", "Content-Type");
-      res.set("Access-Control-Max-Age", "3600");
-      res.status(204).send("");
-    } else {
-      const { status, text } = await handler(
-        convertIncomingMessageToRequest(req),
-      );
-      res.status(status).send(await text());
-    }
+    const nodeResponse = await handler(convertIncomingMessageToRequest(req));
+    nodeResponse.headers.forEach((value, key) => {
+      res.setHeader(key, value);
+    });
+    const resBody = await nodeResponse.text();
+    res.status(nodeResponse.status).send(resBody);
   };
 };
