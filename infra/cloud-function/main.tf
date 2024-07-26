@@ -130,12 +130,6 @@ resource "google_cloudfunctions2_function" "function" {
   }
 
   depends_on = [google_storage_bucket_object.source]
-
-  lifecycle {
-    replace_triggered_by = [
-      google_storage_bucket_object.source
-    ]
-  }
 }
 
 resource "google_cloud_run_service_iam_member" "public-access" {

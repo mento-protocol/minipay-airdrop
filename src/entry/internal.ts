@@ -39,16 +39,16 @@ const internalApp = pipe(
   RouterBuilder.make(api, { enableDocs: false }),
   RouterBuilder.handle("refresh", () => {
     return handleRefresh.pipe(
-      Effect.provide(Redis.live),
       Effect.scoped,
+      Effect.provide(Redis.live),
       Effect.tapError(Console.log),
       Effect.map(() => ({ ok: true as const })),
     );
   }),
   RouterBuilder.handle("import", ({ body }) => {
     return handleImport(body).pipe(
-      Effect.provide(Redis.live),
       Effect.scoped,
+      Effect.provide(Redis.live),
       Effect.tapError(Console.log),
       Effect.map(() => ({ ok: true as const })),
     );

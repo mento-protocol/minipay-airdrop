@@ -51,7 +51,10 @@ export const api = Api.make({ title: "Minipay Airdrop Allocation API" }).pipe(
 const externalApp = pipe(
   RouterBuilder.make(api, { enableDocs: false }),
   RouterBuilder.handle("allocation", ({ path: { address } }) => {
-    return getAllocation(address).pipe(Effect.provide(Redis.live));
+    return getAllocation(address).pipe(
+      Effect.scoped,
+      Effect.provide(Redis.live),
+    );
   }),
   RouterBuilder.build,
 );

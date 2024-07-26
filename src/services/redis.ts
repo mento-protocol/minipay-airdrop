@@ -73,7 +73,7 @@ export class Redis extends Context.Tag("Redis")<
         }),
       ),
       Effect.tap((r) =>
-        Effect.addFinalizer(() => promise(r.client.disconnect.bind(r.client))),
+        Effect.addFinalizer(() => promise(() => r.client.disconnect())),
       ),
     ),
   );
