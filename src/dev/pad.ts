@@ -1,7 +1,11 @@
 import { Console, Effect, pipe } from "effect";
-import { getLatestExecution, Redis, saveLatestExecution } from "../db/redis.js";
+import {
+  getLatestExecution,
+  Redis,
+  saveLatestExecution,
+} from "../services/redis.js";
 import { DUNE_AIRDROP_QUERY_ID } from "../constants.js";
-import { latestQueryResults } from "../dune/client.js";
+import { latestQueryResults } from "../services/dune.js";
 import { handleRefresh } from "../operations/handle-refresh.js";
 import { handleImport } from "../operations/handle-import.js";
 import { getAllocation } from "../operations/get-allocation.js";

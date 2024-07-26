@@ -1,5 +1,5 @@
 import { Request as ExpressRequest } from "@google-cloud/functions-framework";
-import { GetAllocationResponse } from "./functions/external.js";
+import { GetAllocationResponse } from "./entry/external.js";
 import { Address } from "./schema.js";
 
 export const alloc = (

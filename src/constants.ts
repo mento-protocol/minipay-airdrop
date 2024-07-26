@@ -11,3 +11,4 @@ export const GOOGLE_PROJECT = process.env.GOOGLE_PROJECT!;
 export const GOOGLE_LOCATION = process.env.GOOGLE_LOCATION!;
 export const GOOGLE_TASK_QUEUE = process.env.GOOGLE_TASK_QUEUE!;
 export const IMPORT_TASK_URL = process.env.IMPORT_TASK_URL!;
+export const DUNE_API_BASE_URL = "https://api.dune.com/api";

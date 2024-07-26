@@ -1,7 +1,8 @@
 import { Schema } from "@effect/schema";
-
 import { Api, QuerySchema } from "effect-http";
 import { Address } from "../schema.js";
+import { Client } from "effect-http";
+import { DUNE_API_BASE_URL, DUNE_API_KEY } from "../constants.js";
 
 export const DuneAuthHeaders = Schema.Struct({
   "X-DUNE-API-KEY": Schema.String.pipe(Schema.optional()),
@@ -126,3 +127,39 @@ export const api = Api.make({ title: "Dune Query API" }).pipe(
     ),
   ),
 );
+
+const client = Client.make(api, { baseUrl: DUNE_API_BASE_URL });
+const authHeader = {
+  "X-DUNE-API-KEY": DUNE_API_KEY,
+};
+
+export const latestQueryResults = (
+  queryId: number,
+  limit: number,
+  offset?: number,
+) => {
+  return client.latestQueryResults({
+    path: { queryId },
+    query: { limit, offset },
+    headers: authHeader,
+  });
+};
+
+export const getExectionResults = (
+  executionId: string,
+  limit: number,
+  offset?: number,
+) => {
+  return client.getExecutionResult({
+    path: { executionId },
+    query: { limit, offset },
+    headers: authHeader,
+  });
+};
+
+export const executeQuery = (queryId: number) => {
+  return client.executeQuery({
+    path: { queryId },
+    headers: authHeader,
+  });
+};

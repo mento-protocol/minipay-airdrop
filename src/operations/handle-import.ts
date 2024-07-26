@@ -1,14 +1,13 @@
 import { Effect, Option } from "effect";
-import { getExectionResults } from "../dune/client.js";
-import { ImportBody } from "../functions/internal.js";
+import { ImportBody } from "../entry/internal.js";
 import { Schema } from "@effect/schema";
-import { AllocationQueryRow } from "../dune/api.js";
+import { AllocationQueryRow, getExectionResults } from "../services/dune.js";
 import {
   getExecution,
   incrementAllocationsImported,
   saveAllocations,
   saveLatestExecution,
-} from "../db/redis.js";
+} from "../services/redis.js";
 
 export const handleImport = (params: ImportBody) =>
   Effect.gen(function* () {

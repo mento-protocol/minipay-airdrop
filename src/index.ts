@@ -1,2 +1,2 @@
-export { external } from "./functions/external.js";
-export { internal } from "./functions/internal.js";
+export { external } from "./entry/external.js";
+export { internal } from "./entry/internal.js";

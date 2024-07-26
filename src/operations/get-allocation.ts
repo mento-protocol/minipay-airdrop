@@ -3,7 +3,7 @@ import { Address } from "../schema.js";
 import {
   getLatestExecution,
   getAllocation as getAllocationFromCache,
-} from "../db/redis.js";
+} from "../services//redis.js";
 import { notFound } from "effect-http/HttpError";
 import { alloc } from "../utils.js";
 

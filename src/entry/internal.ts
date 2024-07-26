@@ -8,7 +8,7 @@ import { Schema } from "@effect/schema";
 import { handleRefresh } from "../operations/handle-refresh.js";
 import { handleImport } from "../operations/handle-import.js";
 import { NodeSwaggerFiles } from "effect-http-node";
-import { Redis } from "../db/redis.js";
+import { Redis } from "../services/redis.js";
 
 const OK = Schema.Struct({
   ok: Schema.Literal(true),

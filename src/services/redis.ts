@@ -1,6 +1,6 @@
 import { Schema } from "@effect/schema";
 import { Console, Context, Effect, Either, Layer, Option, pipe } from "effect";
-import { AllocationQueryRow } from "../dune/api.js";
+import { AllocationQueryRow } from "./dune.js";
 import { createClient, RedisClientType } from "redis";
 import { REDIS_INSERT_CONCURRENCY } from "../constants.js";
 

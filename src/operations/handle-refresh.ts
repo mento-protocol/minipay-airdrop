@@ -8,16 +8,16 @@ import {
   Either,
   Duration,
 } from "effect";
-import { executeQuery, latestQueryResults } from "../dune/client.js";
+import { executeQuery, latestQueryResults } from "../services/dune.js";
 import {
   DUNE_AIRDROP_QUERY_ID,
   DUNE_AIRDROP_STATS_QUERY_ID,
   IMPORT_BATCH_SIZE,
 } from "../constants.js";
-import { getExecution, saveExecution } from "../db/redis.js";
-import { LatestQueryResultsResponse, StatsQueryRow } from "../dune/api.js";
+import { getExecution, saveExecution } from "../services/redis.js";
+import { LatestQueryResultsResponse, StatsQueryRow } from "../services/dune.js";
 import { Schema } from "@effect/schema";
-import { createImportTask } from "../google/tasks.js";
+import { createImportTask } from "../services/tasks.js";
 
 const { andThen, flatMap, map, retry, fail, succeed, sleep, tap } = Effect;
 const { log } = Console;
