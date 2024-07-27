@@ -26,32 +26,22 @@ export const api = Api.make({ title: "Minipay Internal Data functions" }).pipe(
   Api.addEndpoint(
     Api.get("refresh", "/refresh", {
       description: `[INTERNAL] Check the Dune materialized view execution and start import process.`,
-    }).pipe(Api.setResponseBody(OK)),
+    }),
   ),
   Api.addEndpoint(
     Api.post("import", "/import", {
       description: `[INTERNAL] Import a chunk of data from the Dune materialized view`,
-    }).pipe(Api.setRequestBody(ImportBody), Api.setResponseBody(OK)),
+    }).pipe(Api.setRequestBody(ImportBody)),
   ),
 );
 
 const internalApp = pipe(
   RouterBuilder.make(api, { enableDocs: false }),
   RouterBuilder.handle("refresh", () => {
-    return handleRefresh.pipe(
-      Effect.scoped,
-      Effect.provide(Redis.live),
-      Effect.tapError(Console.log),
-      Effect.map(() => ({ ok: true as const })),
-    );
+    return handleRefresh;
   }),
   RouterBuilder.handle("import", ({ body }) => {
-    return handleImport(body).pipe(
-      Effect.scoped,
-      Effect.provide(Redis.live),
-      Effect.tapError(Console.log),
-      Effect.map(() => ({ ok: true as const })),
-    );
+    return handleImport(body);
   }),
   RouterBuilder.build,
 );
@@ -60,6 +50,7 @@ export const internal = internalApp.pipe(
   HttpMiddleware.logger,
   Effect.provide(NodeSwaggerFiles.SwaggerFilesLive),
   Effect.provide(NodeContext.layer),
+  Effect.provide(Redis.live),
   HttpApp.toWebHandler,
   toCloudFunctionHandler,
 );

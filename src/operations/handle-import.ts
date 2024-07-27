@@ -37,9 +37,8 @@ export const handleImport = (params: ImportBody) =>
         });
       }
     } else {
-      return Effect.fail(
+      yield* Effect.fail(
         "Execution not found in redis. This is highly unexpected",
       );
     }
-    return Effect.succeedNone;
   }).pipe(Effect.annotateLogs(params));

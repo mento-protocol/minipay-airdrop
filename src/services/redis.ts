@@ -115,17 +115,20 @@ export const getExecution = (executionId: string) =>
     if (Option.isNone(value)) {
       return Option.none();
     }
-    const result = yield* pipe(
+    return yield* pipe(
       Effect.succeed(value.value),
-      Effect.map((v) => Effect.try(() => JSON.parse(v))),
+      Effect.flatMap((v) => Effect.try(() => JSON.parse(v))),
       Effect.map(Schema.decodeUnknownEither(Execution)),
+      Effect.flatMap(
+        Either.match({
+          onRight: (value) => Effect.succeed(Option.some(value)),
+          onLeft: () =>
+            redis
+              .DEL(`execution:${executionId}`)
+              .pipe(Effect.map(() => Option.none())),
+        }),
+      ),
     );
-    if (Either.isRight(result)) {
-      return Option.some(result.right);
-    } else {
-      yield* redis.DEL(`execution:${executionId}`);
-      return Option.none();
-    }
   });
 
 export const addExecutionToIndex = (exec: Execution) =>
