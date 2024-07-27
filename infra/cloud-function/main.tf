@@ -103,10 +103,10 @@ resource "google_cloudfunctions2_function" "function" {
   build_config {
     runtime     = "nodejs20"
     entry_point = var.entry_point
-    environment_variables = merge(var.env_vars, {
+    environment_variables = {
       # Causes a re-deploy of the function when the source changes
       "VERSION" = var.release
-    })
+    }
     source {
       storage_source {
         bucket = google_storage_bucket.source.name
@@ -116,12 +116,13 @@ resource "google_cloudfunctions2_function" "function" {
   }
 
   service_config {
-    vpc_connector      = var.vpc_connector
-    max_instance_count = var.service_config.max_instance_count
-    min_instance_count = var.service_config.min_instance_count
-    available_memory   = var.service_config.available_memory
-    timeout_seconds    = var.service_config.timeout_seconds
-    ingress_settings   = var.service_config.ingress_settings
+    environment_variables = var.env_vars
+    vpc_connector         = var.vpc_connector
+    max_instance_count    = var.service_config.max_instance_count
+    min_instance_count    = var.service_config.min_instance_count
+    available_memory      = var.service_config.available_memory
+    timeout_seconds       = var.service_config.timeout_seconds
+    ingress_settings      = var.service_config.ingress_settings
   }
 
   labels = {

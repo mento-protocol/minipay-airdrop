@@ -4,16 +4,16 @@ resource "google_cloud_tasks_queue" "import_queue" {
   name     = "minipay-import-queue"
 
   rate_limits {
-    max_concurrent_dispatches = 20
-    max_dispatches_per_second = 10
+    max_concurrent_dispatches = 40
+    max_dispatches_per_second = 20
   }
 
   retry_config {
     max_attempts       = 5
-    max_retry_duration = "20s"
-    max_backoff        = "3s"
-    min_backoff        = "2s"
-    max_doublings      = 1
+    max_retry_duration = "120s"
+    max_backoff        = "50s"
+    min_backoff        = "5s"
+    max_doublings      = 3
   }
 }
 

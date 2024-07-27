@@ -81,7 +81,7 @@ module "internal_import_cf" {
     IMPORT_BATCH_SIZE        = "30000"
   }
   service_config = {
-    max_instance_count = 10
+    max_instance_count = 40
     min_instance_count = 0
     available_memory   = "256M"
     timeout_seconds    = 60
