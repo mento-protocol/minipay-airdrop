@@ -1,0 +1,19 @@
+version: "3.8"
+services:
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 20 1 --loglevel warning
+    volumes:
+      - cache:/data
+
+  gcloud-tasks-emulator:
+    image: ghcr.io/aertje/cloud-tasks-emulator:latest
+    command: -host 0.0.0.0 -port 9999
+    ports:
+      - "${TASKS_PORT:-9999}:9999"
+volumes:
+  cache:
+    driver: local

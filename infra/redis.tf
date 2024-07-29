@@ -7,6 +7,9 @@ resource "google_redis_instance" "database" {
   location_id             = var.redis_region.main
   alternative_location_id = var.redis_region.alternative
 
+  redis_configs = {
+    "maxmemory-policy" = "volatile-ttl"
+  }
 
   persistence_config {
     persistence_mode    = "RDB"

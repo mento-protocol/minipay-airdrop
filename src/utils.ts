@@ -32,7 +32,7 @@ export const convertIncomingMessageToRequest = (
 
   const request = new Request(url, {
     method: req.method,
-    body: req.method === "POST" ? req.rawBody!.toString() : null,
+    body: req.method === "POST" ? (req.rawBody?.toString() ?? null) : null,
     headers,
   });
   return request;

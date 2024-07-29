@@ -1,13 +1,16 @@
 {
   "ui": "stream",
   "tasks": {
+    "dev:services": {
+      "persistent": true
+    },
     "dev:external": {
       "dependsOn": ["build:ts"],
       "cache": false,
       "persistent": true
     },
     "dev:internal": {
-      "dependsOn": ["build:ts"],
+      "dependsOn": ["build:ts", "dev:create-queue"],
       "cache": false,
       "persistent": true
     },

@@ -30,18 +30,20 @@ export class Redis extends Context.Tag("Redis")<
     readonly ZCARD: EffectifyOption<RedisClientType["ZCARD"]>;
     readonly ZADD: EffectifyOption<RedisClientType["ZADD"]>;
     readonly ZRANGE: EffectifyOption<RedisClientType["ZRANGE"]>;
+    readonly ZRANGE_WITHSCORES: EffectifyOption<
+      RedisClientType["ZRANGE_WITHSCORES"]
+    >;
     readonly INCRBY: Effectify<RedisClientType["INCRBY"]>;
   }
 >() {
   static readonly live = Layer.effect(
     Redis,
     pipe(
-      promise(() => {
-        console.log("Connectin to redis at: ", process.env.REDIS_URL);
-        return createClient({
+      promise(() =>
+        createClient({
           url: process.env.REDIS_URL!,
-        }).connect();
-      }),
+        }).connect(),
+      ),
       Effect.orDie,
       map((client) =>
         Redis.of({
@@ -68,6 +70,10 @@ export class Redis extends Context.Tag("Redis")<
             promise(() => client.ZADD(...args)).pipe(map(Option.fromNullable)),
           ZRANGE: (...args) =>
             promise(() => client.ZRANGE(...args)).pipe(
+              map(Option.fromNullable),
+            ),
+          ZRANGE_WITHSCORES: (...args) =>
+            promise(() => client.ZRANGE_WITHSCORES(...args)).pipe(
               map(Option.fromNullable),
             ),
           INCRBY: (...args) => promise(() => client.INCRBY(...args)),
@@ -142,17 +148,38 @@ export const addExecutionToIndex = (exec: Execution) =>
     ),
   );
 
-const ExecutionIds = Schema.Array(Schema.NumberFromString);
+const ExecutionsList = Schema.Array(
+  Schema.Struct({
+    executionId: Schema.String,
+    timestamp: Schema.NumberFromString,
+  }),
+);
 
 export const getExecutions = () =>
   pipe(
     Redis,
-    flatMap((r) => r.ZRANGE(`execution:index`, 0, -1, { REV: true })),
-    Effect.map(Schema.decodeUnknownEither(ExecutionIds)),
+    flatMap((r) =>
+      r.ZRANGE_WITHSCORES(`index:execution`, 0, -1, { REV: true }),
+    ),
+    Effect.map(Schema.decodeUnknownEither(Schema.Array(Schema.Unknown))),
+    Effect.map(
+      Either.map((result) => {
+        const executions: Array<{ executionId: unknown; timestamp: unknown }> =
+          [];
+        for (let i = 0; i < result.length / 2; i++) {
+          executions.push({
+            executionId: result[i * 2],
+            timestamp: result[i * 2 + 1],
+          });
+        }
+        return executions;
+      }),
+    ),
+    Effect.map(Either.map(Schema.decodeUnknownSync(ExecutionsList))),
     Effect.flatMap(
       Either.match({
         onRight: (v) => Effect.succeed(v),
-        onLeft: Console.log,
+        onLeft: () => Effect.logError("Could not unmarshall executionIndex"),
       }),
     ),
   );

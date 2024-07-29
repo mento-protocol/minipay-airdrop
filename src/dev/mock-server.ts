@@ -5,7 +5,6 @@ import { NodeServer } from "effect-http-node";
 import {
   forbidden,
   internalServerError,
-  notFound,
   tooManyRequests,
 } from "effect-http/HttpError";
 

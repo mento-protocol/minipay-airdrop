@@ -8,9 +8,13 @@
     "pnpm-lock.yaml"
   ],
   "scripts": {
+    "dev:services": "docker-compose -f docker-compose.local.yaml up",
     "dev:internal": "./bin/run-function-emulator.sh internal 3001",
     "dev:external": "./bin/run-function-emulator.sh external 3000",
-    "dev:mock": "tsx src/dev/mock-server.ts",
+    "dev:create-queue": "tsx --env-file=.env.local src/dev/create-dev-queue.ts",
+    "dev:stream": "turbo dev:services dev:internal dev:external dev:create-queue",
+    "dev:tui": "turbo dev:services dev:internal dev:external dev:create-queue build:watch --ui tui",
+    "dev:mock-server": "tsx src/dev/mock-server.ts",
     "pad": "tsx --env-file=.env.local ./src/dev/pad.ts",
     "build:watch": "tsc --watch",
     "build:ts": "tsc"
