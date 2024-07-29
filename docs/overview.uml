@@ -1,0 +1,38 @@
+@startuml
+!define RECTANGLE class
+
+skinparam backgroundColor #EEEBDC
+skinparam handwritten false
+skinparam monochrome false
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam roundCorner 10
+skinparam componentStyle uml2
+
+rectangle "Google Cloud Platform" as GCP {
+    rectangle "Cloud Load Balancer" as CLB #LightBlue
+    rectangle "Cloud Armor" as CA #LightGreen
+    rectangle "External CF" as ECF #LightPink
+    rectangle "Internal Refresh CF" as IRCF #LightPink
+    rectangle "Internal Import CF" as IICF #LightPink
+    database "Redis" as Redis #LightYellow
+    queue "Cloud Tasks" as CT #LightCyan
+    rectangle "Cloud Scheduler" as CS #LightGray
+}
+
+actor "Client" as Client
+cloud "Dune Analytics" as Dune #LightSalmon
+
+Client -[#000000]-> CLB : HTTPS
+CLB -[#000000]-> CA
+CA -[#000000]-> ECF
+ECF -[#000000]-> Redis : Read
+
+CS -[#000000]-> IRCF : Trigger
+IRCF -[#000000]-> Dune : Check for updates
+IRCF -[#000000]-> CT : Create import tasks
+CT -[#000000]-> IICF : Trigger import
+IICF -[#000000]-> Dune : Fetch data
+IICF -[#000000]-> Redis : Write
+@enduml
