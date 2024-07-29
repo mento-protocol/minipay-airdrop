@@ -86,8 +86,8 @@ The MiniPay Airdrop application consists of three main operations: refresh, impo
 
 ### Refresh Operation
 
-1. It queries Dune Analytics for the latest execution of the airdrop query.
-2. If no execution is found, it starts a new import process. For an existing execution, it only starts a new import if:
+1. It queries Dune Analytics for the latest execution of the airdrop query and then tries to fetch the execution from its database (redis).
+2. If the execution doesn'exist in the database, it starts a new import process. For an existing execution, it only starts a new import if:
    - The current import is not finished, AND
    - The current import is older than 30 minutes (considered stale)
 3. If neither of these conditions are met, it returns a "Service Unavailable" response.
