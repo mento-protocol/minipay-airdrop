@@ -72,9 +72,8 @@ variable "env_vars" {
 }
 
 provider "google" {
-  project     = var.project_id
-  region      = var.region
-  credentials = "credentials.json"
+  project = var.project_id
+  region  = var.region
 }
 
 resource "random_id" "bucket" {
@@ -123,6 +122,13 @@ resource "google_cloudfunctions2_function" "function" {
     available_memory      = var.service_config.available_memory
     timeout_seconds       = var.service_config.timeout_seconds
     ingress_settings      = var.service_config.ingress_settings
+
+    secret_environment_variables {
+      key        = "DUNE_API"
+      secret     = "dune-api-key"
+      project_id = var.project_id
+      version    = "latest"
+    }
   }
 
   labels = {

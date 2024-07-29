@@ -38,13 +38,12 @@ variable "project_id" {
   default = "mento-prod"
 }
 
-module "build" {
-  source = "./build-source"
+provider "google-beta" {
+  project = var.project_id
 }
 
-data "google_secret_manager_secret_version_access" "dune_api_key" {
-  project = var.project_id
-  secret  = "dune-api-key"
+module "build" {
+  source = "./build-source"
 }
 
 resource "google_vpc_access_connector" "connector" {
@@ -75,7 +74,6 @@ module "internal_import_cf" {
     GOOGLE_PROJECT           = var.project_id
     GOOGLE_LOCATION          = var.region
     GOOGLE_TASK_QUEUE        = google_cloud_tasks_queue.import_queue.name
-    DUNE_API_KEY             = data.google_secret_manager_secret_version_access.dune_api_key.secret_data
     REDIS_URL                = local.redis_url
     REDIS_INSERT_CONCURRENCY = "10000"
     IMPORT_BATCH_SIZE        = "30000"
@@ -106,7 +104,6 @@ module "internal_refresh_cf" {
     GOOGLE_LOCATION          = var.region
     GOOGLE_TASK_QUEUE        = google_cloud_tasks_queue.import_queue.name
     IMPORT_TASK_URL          = "${module.internal_import_cf.function_uri}/import"
-    DUNE_API_KEY             = data.google_secret_manager_secret_version_access.dune_api_key.secret_data
     REDIS_URL                = local.redis_url
     REDIS_INSERT_CONCURRENCY = "10000"
     IMPORT_BATCH_SIZE        = "30000"
@@ -150,11 +147,6 @@ output "build" {
     release = module.build.release,
     package = module.build.package
   }
-}
-
-provider "google-beta" {
-  project     = "mento-prod"
-  credentials = "credentials.json"
 }
 
 output "function_uris" {
