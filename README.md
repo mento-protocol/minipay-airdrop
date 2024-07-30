@@ -92,6 +92,48 @@ The TUI version provides a text-based dashboard for monitoring all these process
 
 Both development paths will automatically update and reload as you make changes to the code, providing a smooth development experience.
 
+#### Running a local import
+
+After starting the dev servers, you can simulate the data indexing process and query the local Redis database:
+
+1. Start the dev servers:
+
+```bash
+   pnpm run dev:stream
+```
+
+2. Trigger the refresh endpoint to index the first batch (development mode only):
+
+```bash
+   curl http://localhost:3001/refresh
+```
+
+3. Check the indexed allocations in your local Redis database:
+
+```bash
+   redis-cli
+   > KEYS allocation:*
+```
+
+This will show you the keys for all indexed allocations.
+
+4. Construct a curl query to get a specific address's allocation:
+
+```bash
+   curl http://localhost:3000/allocation/0x1234...  # Replace with an actual indexed address
+```
+
+This process allows you to test the indexing and retrieval of allocations using your local development environment.
+
+This section provides backend developers with a step-by-step guide to:
+
+1. Start the development servers
+2. Trigger the refresh endpoint to index the first batch of data
+3. Use redis-cli to inspect the indexed allocations in the local Redis database
+4. Construct a curl query to retrieve a specific allocation
+
+This workflow will help developers test and verify the indexing and retrieval processes in their local environment.
+
 ## Application Logic
 
 The MiniPay Airdrop application consists of three main operations: refresh, import, and allocation retrieval. Here's how each of these operations works:
