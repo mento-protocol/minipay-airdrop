@@ -26,17 +26,23 @@ If you're a frontend engineer or just need to interact with the API:
 
 1. Install dependencies:
 
+```bash
    pnpm install
+```
 
 2. Run the mock server:
 
+```bash
    pnpm run dev:mock-server
+```
 
 3. Once the server is running, you can access the Swagger OpenAPI specification at:
 
+```bash
    http://localhost:3000/docs
+```
 
-   This provides an interactive documentation of the API endpoints, making it easy to understand and test the API without setting up the full backend infrastructure.
+This provides an interactive documentation of the API endpoints, making it easy to understand and test the API without setting up the full backend infrastructure.
 
 4. The mock API supports various test scenarios and failure modes. You can trigger these by using specific addresses when calling the API. For example:
 
@@ -53,7 +59,9 @@ If you're developing the actual package:
 
 1. Install dependencies:
 
+```bash
    pnpm install
+```
 
 2. Set up environment variables:
    Create a `.env.local` file with the necessary environment variables (DUNE_API_KEY, REDIS_URL, etc.)
@@ -62,21 +70,25 @@ If you're developing the actual package:
 
 4. Choose one of the following streamlined development commands:
 
+```bash
    pnpm run dev:stream
+```
 
-   or for a TUI (Text User Interface) experience:
+or for a TUI (Text User Interface) experience:
 
+```bash
    pnpm run dev:tui
+```
 
-   These commands are persistent watch commands that run several processes concurrently:
+These commands are persistent watch commands that run several processes concurrently:
 
-   - `dev:services`: Starts the required Docker containers (Redis, Cloud Tasks Emulator)
-   - `dev:internal`: Runs the internal API with live reloading
-   - `dev:external`: Runs the external API with live reloading
-   - `dev:create-queue`: Sets up the development task queue
-   - `build:watch`: Watches for TypeScript changes and recompiles as needed
+- `dev:services`: Starts the required Docker containers (Redis, Cloud Tasks Emulator)
+- `dev:internal`: Runs the internal API with live reloading
+- `dev:external`: Runs the external API with live reloading
+- `dev:create-queue`: Sets up the development task queue
+- `build:watch`: Watches for TypeScript changes and recompiles as needed
 
-   The TUI version provides a text-based dashboard for monitoring all these processes.
+The TUI version provides a text-based dashboard for monitoring all these processes.
 
 Both development paths will automatically update and reload as you make changes to the code, providing a smooth development experience.
 
@@ -215,13 +227,13 @@ This section describes how to deploy the MiniPay Airdrop infrastructure using Te
 
 1. Ensure you're logged into the Google Cloud SDK:
 
-```
+```bash
    gcloud auth login
 ```
 
 2. Set your active project:
 
-```
+```bash
    gcloud config set project mento-prod
 ```
 
@@ -229,27 +241,35 @@ This section describes how to deploy the MiniPay Airdrop infrastructure using Te
 
 1. Navigate to the `infra/` directory:
 
-```
+```bash
    cd infra
 ```
 
 2. Initialize Terraform:
 
+```bash
    terraform init
+```
 
 3. Impersonate the service account:
 
+```bash
    gcloud auth application-default login --impersonate-service-account=terraform@mento-prod.iam.gserviceaccount.com
+```
 
 4. Plan the Terraform deployment:
 
+```bash
    terraform plan -out=tfplan
+```
 
 5. Review the plan carefully to ensure it matches your expectations.
 
 6. Apply the Terraform plan:
 
+```bash
    terraform apply tfplan
+```
 
 7. Once the deployment is complete, Terraform will output important information such as function URLs and other resource identifiers.
 
