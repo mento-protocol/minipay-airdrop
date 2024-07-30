@@ -38,10 +38,14 @@ export const api = Api.make({ title: "Minipay Internal Data functions" }).pipe(
 const internalApp = pipe(
   RouterBuilder.make(api, { enableDocs: false }),
   RouterBuilder.handle("refresh", () => {
-    return handleRefresh;
+    return handleRefresh.pipe(
+      Effect.map(() => undefined), // No response body
+    );
   }),
   RouterBuilder.handle("import", ({ body }) => {
-    return handleImport(body);
+    return handleImport(body).pipe(
+      Effect.map(() => undefined), // No response body
+    );
   }),
   RouterBuilder.build,
 );
