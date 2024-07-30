@@ -24,7 +24,6 @@ const failIfSameExecution =
         yield* Effect.log("query hasn't finised, retrying...");
         yield* fail("not-refreshed");
       }
-
       return query;
     });
 
@@ -82,9 +81,13 @@ const scheduleBatch = (
 
 const scheduleImportTasks = (execution: LatestQueryResultsResponse) =>
   Effect.gen(function* () {
-    const batches = Math.ceil(
-      execution.result.metadata.total_row_count / IMPORT_BATCH_SIZE,
-    );
+    const batches =
+      process.env.NODE_ENV == "development"
+        ? 1
+        : Math.ceil(
+            execution.result.metadata.total_row_count / IMPORT_BATCH_SIZE,
+          );
+
     yield* Effect.all(
       [...Array.from(Array(batches)).keys()].map((batchIndex) =>
         scheduleBatch(execution, batchIndex),

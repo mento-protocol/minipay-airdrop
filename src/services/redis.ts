@@ -204,13 +204,29 @@ export const saveAllocations = (
         allocations.map(
           (allocation) =>
             r.SET(
-              `allocation:${executionId}:${allocation.address}`,
-              JSON.stringify(allocation),
+              `allocation:${executionId}:${allocation.address}:transfer-volume`,
+              allocation.amount_transferred,
               {
                 EX: 60 * 60 * 24 * 3,
               },
             ),
           { concurrency: REDIS_INSERT_CONCURRENCY },
+        ),
+      ).pipe(
+        Effect.andThen(
+          Effect.all(
+            allocations.map(
+              (allocation) =>
+                r.SET(
+                  `allocation:${executionId}:${allocation.address}:average-holdings`,
+                  allocation.avg_amount_held,
+                  {
+                    EX: 60 * 60 * 24 * 3,
+                  },
+                ),
+              { concurrency: REDIS_INSERT_CONCURRENCY },
+            ),
+          ),
         ),
       ),
     ),
@@ -233,13 +249,31 @@ export const resetAllocationsImported = (executionId: string) =>
     Effect.flatMap((r) => r.DEL(`execution:${executionId}:rows-imported`)),
   );
 
+export const Allocation = Schema.Struct({
+  transferVolume: Schema.NumberFromString,
+  averageHoldings: Schema.NumberFromString,
+});
+
 export const getAllocation = (executionId: string, address: string) =>
   pipe(
     Redis,
-    flatMap((r) => r.GET(`allocation:${executionId}:${address.toLowerCase()}`)),
-    Effect.tap(Console.log),
-    Effect.flatMap(Option.map((r) => JSON.parse(r))),
-    Effect.orElseSucceed(() => Option.none),
-    Effect.map(Schema.decodeUnknownOption(AllocationQueryRow)),
+    flatMap((r) =>
+      Effect.zipWith(
+        r.GET(
+          `allocation:${executionId}:${address.toLowerCase()}:transfer-volume`,
+        ),
+        r.GET(
+          `allocation:${executionId}:${address.toLowerCase()}:average-holdings`,
+        ),
+        (transferVolume, averageHoldings) => {
+          console.log(transferVolume);
+          console.log(averageHoldings);
+          return Schema.decodeUnknownOption(Allocation)({
+            transferVolume: Option.getOrNull(transferVolume),
+            averageHoldings: Option.getOrNull(averageHoldings),
+          });
+        },
+      ),
+    ),
     Effect.tap(Console.log),
   );

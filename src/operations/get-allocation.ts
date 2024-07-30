@@ -35,13 +35,13 @@ export const getAllocation = (address: Address) =>
       return yield* Effect.fail(noAllocation());
     }
 
-    const mentoFromTransfers = Math.min(
-      allocation.value.amount_transferred * 0.1,
-      100,
-    );
-    const mentoFromHoldings = Math.min(allocation.value.avg_amount_held, 100);
+    const { transferVolume, averageHoldings } = allocation.value;
+
+    const mentoFromTransfers = Math.min(transferVolume * 0.1, 100);
+    const mentoFromHoldings = Math.min(averageHoldings, 100);
+
     return alloc(
-      allocation.value.address,
+      address,
       mentoFromHoldings,
       mentoFromTransfers,
       latest.timestamp,
