@@ -215,17 +215,23 @@ This section describes how to deploy the MiniPay Airdrop infrastructure using Te
 
 1. Ensure you're logged into the Google Cloud SDK:
 
+```
    gcloud auth login
+```
 
 2. Set your active project:
 
+```
    gcloud config set project mento-prod
+```
 
 ### Deployment Steps
 
 1. Navigate to the `infra/` directory:
 
+```
    cd infra
+```
 
 2. Initialize Terraform:
 
