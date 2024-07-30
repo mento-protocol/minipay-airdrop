@@ -128,7 +128,7 @@ These operations work together to ensure that the airdrop data is regularly upda
 
 ### Using Effect
 
-This project utilizes Effect, a TypeScript metaframework that emphasizes type safety and functional programming principles.
+This project utilizes [Effect](https://effect.website/), a TypeScript metaframework that emphasizes type safety and functional programming principles.
 Effect offers powerful features like built-in error handling, improved concurrency management, and high composability.
 While it comes with a steep learning curve, these benefits can lead to more robust and maintainable code.
 
@@ -137,6 +137,13 @@ Despite the short-term nature of this project, it serves as a chance to gain han
 Effect's approach to building scalable TypeScript applications provides insights that could inform future technology choices.
 While Effect might not be suitable for all projects, especially those with tight deadlines or diverse maintenance teams,
 the learning experience and potential code quality improvements make it worthwhile for this particular use case.
+
+#### Recommende Resources
+
+- [Effect Docs](https://effect.website/docs/introduction)
+- [Beginner Workshop](https://www.youtube.com/watch?v=Lz2J1NBnHK4&t=8295s&pp=ygUYZWZmZWN0IGJlZ2lubmVyIHdvcmtzaG9w)
+- [Advanced Workshop](https://www.youtube.com/watch?v=7jOD5okJC00&t=1910s&pp=ygUYZWZmZWN0IGJlZ2lubmVyIHdvcmtzaG9w)
+- [Effect Discord](https://discord.gg/effect-ts)
 
 ## Infrastructure
 
