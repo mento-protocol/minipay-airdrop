@@ -114,6 +114,18 @@ The MiniPay Airdrop application consists of three main operations: refresh, impo
 
 These operations work together to ensure that the airdrop data is regularly updated and efficiently served to users. The use of Redis as a cache helps in quick data retrieval, while the batch import process allows for handling large datasets without overwhelming the system.
 
+### Using Effect
+
+This project utilizes Effect, a TypeScript metaframework that emphasizes type safety and functional programming principles.
+Effect offers powerful features like built-in error handling, improved concurrency management, and high composability.
+While it comes with a steep learning curve, these benefits can lead to more robust and maintainable code.
+
+The choice to use Effect in a one-off project might seem unconventional, but it presents a valuable learning opportunity.
+Despite the short-term nature of this project, it serves as a chance to gain hands-on experience with advanced functional programming concepts.
+Effect's approach to building scalable TypeScript applications provides insights that could inform future technology choices.
+While Effect might not be suitable for all projects, especially those with tight deadlines or diverse maintenance teams,
+the learning experience and potential code quality improvements make it worthwhile for this particular use case.
+
 ## Infrastructure
 
 The MiniPay Airdrop project leverages Google Cloud Platform (GCP) for its infrastructure. The infrastructure is provisioned using Terraform scripts located in the `infra/` directory. Below is a detailed overview of the system architecture:
@@ -160,6 +172,34 @@ The MiniPay Airdrop project leverages Google Cloud Platform (GCP) for its infras
 4. **security_policy**: Configures Cloud Armor security policies.
 
 This architecture ensures scalability, security, and efficient data processing for the MiniPay Airdrop system. The use of managed GCP services minimizes operational overhead while providing robust performance and reliability.
+
+### Redis Usage and Key Expiry
+
+This project utilizes Redis as a caching layer to store and retrieve allocation data efficiently. The Redis implementation includes a key expiry mechanism to manage data freshness and storage optimization. Here's how the system is designed to work:
+
+1. Data Storage: When allocation data is imported from Dune Analytics, it is stored in Redis with keys in the format `allocation:{executionId}:{address}`.
+
+2. Key Expiry: Each allocation key is set with an expiration time of 3 days (259,200 seconds). This is implemented in the `saveAllocations` function:
+
+```typescript
+r.SET(
+  `allocation:${executionId}:${allocation.address}`,
+  JSON.stringify(allocation),
+  {
+    EX: 60 * 60 * 24 * 3,
+  },
+);
+```
+
+3. Data Refresh: The system is designed to refresh the data periodically. When new data is imported, it creates new keys with the latest `executionId`, effectively replacing the old data.
+
+4. Automatic Cleanup: As keys expire, Redis automatically removes them, freeing up space without manual intervention.
+
+5. Execution Tracking: The system also keeps track of executions using keys like `execution:{executionId}` and an index `index:execution`. These keys do not have an expiry set, allowing for historical tracking of executions.
+
+6. Eviction Policy: The Redis instance is configured with the `volatile-ttl` eviction policy. This means that when the memory limit is reached, Redis will remove keys with the nearest expiration time. This policy ensures that if the system experiences unexpected high load or delays in data refresh, it will prioritize removing the keys that are closest to expiring anyway.
+
+This approach ensures that the system always serves the most recent data while automatically managing storage by removing outdated information. It provides a balance between data freshness and efficient use of Redis storage, with the eviction policy adding an extra layer of protection against memory exhaustion.
 
 ## Deployment
 

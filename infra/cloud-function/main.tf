@@ -124,7 +124,7 @@ resource "google_cloudfunctions2_function" "function" {
     ingress_settings      = var.service_config.ingress_settings
 
     secret_environment_variables {
-      key        = "DUNE_API"
+      key        = "DUNE_API_KEY"
       secret     = "dune-api-key"
       project_id = var.project_id
       version    = "latest"
