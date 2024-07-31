@@ -1,18 +1,13 @@
 import { HttpApp, HttpMiddleware } from "@effect/platform";
 import { Api, RouterBuilder } from "effect-http";
-import { Console, Effect, pipe } from "effect";
+import { Effect, pipe } from "effect";
 import { toCloudFunctionHandler } from "../utils.js";
 import { NodeContext } from "@effect/platform-node";
 import { Schema } from "@effect/schema";
 import { handleRefresh } from "../operations/handle-refresh.js";
 import { handleImport } from "../operations/handle-import.js";
 import { NodeSwaggerFiles } from "effect-http-node";
-import { Redis } from "../services/redis.js";
-
-const OK = Schema.Struct({
-  ok: Schema.Literal(true),
-});
-type OK = Schema.Schema.Type<typeof OK>;
+import { Database } from "../services/database.js";
 
 export const ImportBody = Schema.Struct({
   executionId: Schema.String,
@@ -54,7 +49,7 @@ export const internal = internalApp.pipe(
   HttpMiddleware.logger,
   Effect.provide(NodeSwaggerFiles.SwaggerFilesLive),
   Effect.provide(NodeContext.layer),
-  Effect.provide(Redis.live),
+  Effect.provide(Database.live),
   HttpApp.toWebHandler,
   toCloudFunctionHandler,
 );

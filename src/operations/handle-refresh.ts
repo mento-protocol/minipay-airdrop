@@ -13,11 +13,7 @@ import {
   DUNE_AIRDROP_STATS_QUERY_ID,
   IMPORT_BATCH_SIZE,
 } from "../constants.js";
-import {
-  getExecution,
-  resetAllocationsImported,
-  saveExecution,
-} from "../services/redis.js";
+import { Database } from "../services/database.js";
 import { LatestQueryResultsResponse, StatsQueryRow } from "../services/dune.js";
 import { Schema } from "@effect/schema";
 import { createImportTask } from "../services/tasks.js";
@@ -106,48 +102,58 @@ const scheduleImportTasks = (duneExecution: LatestQueryResultsResponse) =>
   );
 
 const startImport = (duneExecution: LatestQueryResultsResponse) =>
-  pipe(
-    resetAllocationsImported(duneExecution.execution_id),
-    andThen(getAirdropStats(duneExecution.execution_ended_at)),
-    tap(Effect.log(`saving execution: ${duneExecution.execution_id}`)),
-    flatMap((stats) =>
-      saveExecution({
-        executionId: duneExecution.execution_id,
-        timestamp: duneExecution.execution_ended_at.getTime(),
-        importFinished: false,
-        rows: duneExecution.result.metadata.total_row_count,
-        stats,
-      }),
+  Database.pipe(
+    flatMap((db) =>
+      pipe(
+        pipe(
+          db.resetAllocationsImported(duneExecution.execution_id),
+          andThen(getAirdropStats(duneExecution.execution_ended_at)),
+          tap(Effect.log(`saving execution: ${duneExecution.execution_id}`)),
+          flatMap((stats) =>
+            db.saveExecution({
+              executionId: duneExecution.execution_id,
+              timestamp: duneExecution.execution_ended_at.getTime(),
+              importFinished: false,
+              rows: duneExecution.result.metadata.total_row_count,
+              stats,
+            }),
+          ),
+          andThen(scheduleImportTasks(duneExecution)),
+        ),
+      ),
     ),
-    andThen(scheduleImportTasks(duneExecution)),
   );
 
-export const handleRefresh = pipe(
-  latestQueryResults(DUNE_AIRDROP_QUERY_ID, 1, 0),
-  flatMap((duneExecution) =>
-    getExecution(duneExecution.execution_id).pipe(
-      map((cacheExecution) => ({ duneExecution, cacheExecution })),
+export const handleRefresh = Database.pipe(
+  flatMap((db) =>
+    pipe(
+      latestQueryResults(DUNE_AIRDROP_QUERY_ID, 1, 0),
+      flatMap((duneExecution) =>
+        db
+          .getExecution(duneExecution.execution_id)
+          .pipe(map((cacheExecution) => ({ duneExecution, cacheExecution }))),
+      ),
+      flatMap(({ cacheExecution, duneExecution }) =>
+        Option.match(cacheExecution, {
+          onNone: () => startImport(duneExecution),
+          onSome: (execution) =>
+            pipe(
+              value(execution),
+              whenAnd(
+                { importFinished: true },
+                {
+                  timestamp: (timestamp) =>
+                    Duration.greaterThan(
+                      Duration.millis(Date.now() - timestamp),
+                      Duration.decode("30 minutes"),
+                    ),
+                },
+                () => startImport(duneExecution),
+              ),
+              orElse(() => Effect.fail(serviceUnavailable())),
+            ),
+        }),
+      ),
     ),
-  ),
-  flatMap(({ cacheExecution, duneExecution }) =>
-    Option.match(cacheExecution, {
-      onNone: () => startImport(duneExecution),
-      onSome: (execution) =>
-        pipe(
-          value(execution),
-          whenAnd(
-            { importFinished: true },
-            {
-              timestamp: (timestamp) =>
-                Duration.greaterThan(
-                  Duration.millis(Date.now() - timestamp),
-                  Duration.decode("30 minutes"),
-                ),
-            },
-            () => startImport(duneExecution),
-          ),
-          orElse(() => Effect.fail(serviceUnavailable())),
-        ),
-    }),
   ),
 );

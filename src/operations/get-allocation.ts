@@ -1,11 +1,10 @@
-import { Effect, Option } from "effect";
+import { Effect, Option, pipe } from "effect";
 import { Address } from "../schema.js";
-import {
-  getLatestExecution,
-  getAllocation as getAllocationFromCache,
-} from "../services//redis.js";
+import { Database } from "../services/database.js";
 import { notFound } from "effect-http/HttpError";
 import { alloc } from "../utils.js";
+
+const { flatMap, map } = Effect;
 
 export const noAllocation = () => {
   return notFound(JSON.stringify({ error: "no-allocation" }));
@@ -16,34 +15,40 @@ export const noExecution = () => {
 };
 
 export const getAllocation = (address: Address) =>
-  Effect.gen(function* () {
-    const latest = yield* getLatestExecution.pipe(
-      Effect.flatMap(
-        Option.match({
-          onSome: (v) => Effect.succeed(v),
-          onNone: () => Effect.fail(noExecution()),
+  pipe(
+    Database,
+    flatMap((db) =>
+      pipe(
+        db.getLatestExecution,
+        flatMap(
+          Option.match({
+            onSome: Effect.succeed,
+            onNone: () => Effect.fail(noExecution()),
+          }),
+        ),
+        flatMap(({ executionId, timestamp }) =>
+          pipe(
+            db.getAllocation(executionId, address),
+            Effect.map(Option.map((r) => ({ ...r, timestamp }))),
+          ),
+        ),
+        flatMap(
+          Option.match({
+            onSome: Effect.succeed,
+            onNone: () => Effect.fail(noAllocation()),
+          }),
+        ),
+        map(({ transferVolume, averageHoldings, timestamp }) => {
+          const mentoFromTransfers = Math.min(transferVolume * 0.1, 100);
+          const mentoFromHoldings = Math.min(averageHoldings, 100);
+
+          return alloc(
+            address,
+            mentoFromHoldings,
+            mentoFromTransfers,
+            timestamp,
+          );
         }),
       ),
-    );
-
-    const allocation = yield* getAllocationFromCache(
-      latest.executionId,
-      address,
-    );
-
-    if (Option.isNone(allocation)) {
-      return yield* Effect.fail(noAllocation());
-    }
-
-    const { transferVolume, averageHoldings } = allocation.value;
-
-    const mentoFromTransfers = Math.min(transferVolume * 0.1, 100);
-    const mentoFromHoldings = Math.min(averageHoldings, 100);
-
-    return alloc(
-      address,
-      mentoFromHoldings,
-      mentoFromTransfers,
-      latest.timestamp,
-    );
-  });
+    ),
+  );

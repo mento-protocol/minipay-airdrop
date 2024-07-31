@@ -8,7 +8,7 @@ import { Schema } from "@effect/schema";
 import { Api } from "effect-http";
 import { Address } from "../schema.js";
 import { getAllocation } from "../operations/get-allocation.js";
-import { Redis } from "../services/redis.js";
+import { Database } from "../services/database.js";
 
 const GetAllocationResponse = Schema.Struct({
   address: Address,
@@ -53,7 +53,7 @@ const externalApp = pipe(
   RouterBuilder.handle("allocation", ({ path: { address } }) => {
     return getAllocation(address).pipe(
       Effect.scoped,
-      Effect.provide(Redis.live),
+      Effect.provide(Database.live),
     );
   }),
   RouterBuilder.build,

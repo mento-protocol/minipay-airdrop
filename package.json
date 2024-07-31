@@ -48,6 +48,6 @@
     "effect": "^3.5.6",
     "effect-http": "^0.75.0",
     "effect-http-node": "^0.17.1",
-    "redis": "^4.6.15"
+    "ioredis": "^5.4.1"
   }
 }

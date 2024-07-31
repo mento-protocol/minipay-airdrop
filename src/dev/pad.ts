@@ -1,9 +1,5 @@
-import { Console, Effect, pipe } from "effect";
-import {
-  getLatestExecution,
-  Redis,
-  saveLatestExecution,
-} from "../services/redis.js";
+import { Console, Effect } from "effect";
+import { Database } from "../services/database.js";
 import { DUNE_AIRDROP_QUERY_ID } from "../constants.js";
 import { latestQueryResults } from "../services/dune.js";
 import { handleRefresh } from "../operations/handle-refresh.js";
@@ -14,7 +10,7 @@ import { CloudTasksClient } from "@google-cloud/tasks";
 
 const _refresh = handleRefresh.pipe(
   Effect.tap(Console.log),
-  Effect.provide(Redis.live),
+  Effect.provide(Database.live),
   Effect.scoped,
 );
 
@@ -25,7 +21,7 @@ const _import = handleImport({
   limit: 10000,
   batchIndex: 218,
 }).pipe(
-  Effect.provide(Redis.live),
+  Effect.provide(Database.live),
   Effect.scoped,
   Effect.tapError(Console.log),
   //  Effect.runPromise
@@ -35,7 +31,7 @@ const _getAllocation = getAllocation(
   "0xd163fa89eb9b15b2ec055529d8208a134dd77444",
 ).pipe(
   Effect.tap(Console.log),
-  Effect.provide(Redis.live),
+  Effect.provide(Database.live),
   Effect.scoped,
   // Effect.runPromise,
 );
@@ -45,10 +41,14 @@ const _latestQuery = latestQueryResults(DUNE_AIRDROP_QUERY_ID, 5000000, 0).pipe(
   Effect.tapError(Console.log),
 );
 
-const _getLatest = getLatestExecution.pipe(
-  Effect.tap(Console.log),
-  Effect.provide(Redis.live),
-  Effect.scoped,
+const _getLatest = Database.pipe(
+  Effect.flatMap((db) =>
+    db.getLatestExecution.pipe(
+      Effect.tap(Console.log),
+      Effect.provide(Database.live),
+      Effect.scoped,
+    ),
+  ),
 );
 
 const _createQueue = Effect.gen(function* () {
