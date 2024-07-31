@@ -17,6 +17,33 @@ resource "google_cloud_tasks_queue" "import_queue" {
   }
 }
 
+resource "google_service_account" "internal_invoker" {
+  project      = var.project_id
+  account_id   = "minipay-internal-job-invoker"
+  display_name = "Minipay Internal Job Invoker"
+  description  = "Used by the Cloud Scheduler and Cloud Task queue"
+}
+
+resource "google_cloud_run_service_iam_member" "internal_refresh_cf_private_access" {
+  location = var.region
+  project  = var.project_id
+  service  = module.internal_refresh_cf.service
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.internal_invoker.email}"
+
+  depends_on = [module.internal_refresh_cf]
+}
+
+resource "google_cloud_run_service_iam_member" "internal_import_cf_private_access" {
+  location = var.region
+  service  = module.internal_import_cf.service
+  project  = var.project_id
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.internal_invoker.email}"
+
+  depends_on = [module.internal_import_cf]
+}
+
 resource "google_cloud_scheduler_job" "default" {
   project     = var.project_id
   name        = "minipay-refresh-job"
@@ -35,5 +62,9 @@ resource "google_cloud_scheduler_job" "default" {
   http_target {
     http_method = "GET"
     uri         = "${module.internal_refresh_cf.function_uri}/refresh"
+    oidc_token {
+      service_account_email = google_service_account.internal_invoker.email
+      audience              = module.internal_refresh_cf.function_uri
+    }
   }
 }

@@ -81,12 +81,7 @@ module "internal_import_cf" {
   Internal API for running the tasks that import data from Dune into Redis to be served by the external API
   EOF
   env_vars = {
-    GOOGLE_PROJECT           = var.project_id
-    GOOGLE_LOCATION          = var.region
-    GOOGLE_TASK_QUEUE        = google_cloud_tasks_queue.import_queue.name
-    REDIS_URL                = local.redis_url
-    REDIS_INSERT_CONCURRENCY = var.redis_insert_concurrency
-    IMPORT_BATCH_SIZE        = var.import_batch_size
+    REDIS_URL = local.redis_url
   }
   service_config = {
     max_instance_count = 40
@@ -111,13 +106,15 @@ module "internal_refresh_cf" {
   Internal API for running the tasks that import data from Dune into Redis to be served by the external API
   EOF
   env_vars = {
-    GOOGLE_PROJECT           = var.project_id
-    GOOGLE_LOCATION          = var.region
-    GOOGLE_TASK_QUEUE        = google_cloud_tasks_queue.import_queue.name
-    IMPORT_TASK_URL          = "${module.internal_import_cf.function_uri}/import"
-    REDIS_URL                = local.redis_url
-    REDIS_INSERT_CONCURRENCY = var.redis_insert_concurrency
-    IMPORT_BATCH_SIZE        = var.import_batch_size
+    GOOGLE_PROJECT                = var.project_id
+    GOOGLE_LOCATION               = var.region
+    GOOGLE_TASK_QUEUE             = google_cloud_tasks_queue.import_queue.name
+    IMPORT_TASK_URL               = "${module.internal_import_cf.function_uri}/import"
+    INVOKER_SERVICE_ACCOUNT_EMAIL = google_service_account.internal_invoker.email
+    INVOKER_AUDIENCE              = module.internal_import_cf.function_uri
+    REDIS_URL                     = local.redis_url
+    IMPORT_BATCH_SIZE             = var.import_batch_size
+
   }
   service_config = {
     max_instance_count = 1
@@ -152,6 +149,16 @@ module "external_cf" {
     timeout_seconds    = 60
     ingress_settings   = "ALLOW_INTERNAL_AND_GCLB"
   }
+}
+
+resource "google_cloud_run_service_iam_member" "external_cf_public_access" {
+  location = var.region
+  service  = module.external_cf.service
+  project  = var.project_id
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+
+  depends_on = [module.external_cf]
 }
 
 output "build" {

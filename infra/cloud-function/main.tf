@@ -82,7 +82,7 @@ resource "random_id" "bucket" {
   byte_length = 8
 }
 
-// trunk-ignore(trivy/AVD-GCP-0066)
+// trunk-ignore(trivy/AVD-GCP-0066,checkov/CKV_GCP_62,checkov/CKV_GCP_78)
 resource "google_storage_bucket" "source" {
   name                        = "${random_id.bucket.hex}-minipay-cloud-fn-source" # Every bucket name must be globally unique
   location                    = "US"
@@ -127,7 +127,8 @@ resource "google_cloudfunctions2_function" "function" {
     ingress_settings      = var.service_config.ingress_settings
 
     secret_environment_variables {
-      key        = "DUNE_API_KEY"
+      key = "DUNE_API_KEY"
+      // trunk-ignore(checkov/CKV_SECRET_6)
       secret     = "dune-api-key"
       project_id = var.project_id
       version    = "latest"
@@ -142,14 +143,8 @@ resource "google_cloudfunctions2_function" "function" {
   depends_on = [google_storage_bucket_object.source]
 }
 
-resource "google_cloud_run_service_iam_member" "public-access" {
-  location = var.region
-  service  = google_cloudfunctions2_function.function.service_config[0].service
-  project  = var.project_id
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-
-  depends_on = [google_cloudfunctions2_function.function]
+output "service" {
+  value = google_cloudfunctions2_function.function.service_config[0].service
 }
 
 output "function_uri" {
