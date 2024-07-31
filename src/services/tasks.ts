@@ -67,6 +67,7 @@ export const createImportTask = (payload: object) =>
                 url: tasks.importUrl,
                 oidcToken: {
                   serviceAccountEmail: tasks.invokerServiceAccountEmail,
+                  audience: tasks.invokerAudience,
                 },
               },
             },
