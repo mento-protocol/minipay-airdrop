@@ -46,6 +46,16 @@ module "build" {
   source = "./build-source"
 }
 
+variable "redis_insert_concurrency" {
+  type    = number
+  default = 100
+}
+
+variable "import_batch_size" {
+  type    = number
+  default = 32000
+}
+
 resource "google_vpc_access_connector" "connector" {
   project       = var.project_id
   region        = var.region
@@ -75,14 +85,15 @@ module "internal_import_cf" {
     GOOGLE_LOCATION          = var.region
     GOOGLE_TASK_QUEUE        = google_cloud_tasks_queue.import_queue.name
     REDIS_URL                = local.redis_url
-    REDIS_INSERT_CONCURRENCY = "10000"
-    IMPORT_BATCH_SIZE        = "30000"
+    REDIS_INSERT_CONCURRENCY = var.redis_insert_concurrency
+    IMPORT_BATCH_SIZE        = var.import_batch_size
   }
   service_config = {
     max_instance_count = 40
     min_instance_count = 0
-    available_memory   = "256M"
-    timeout_seconds    = 60
+    available_memory   = "512Mi"
+    available_cpu      = "0.333"
+    timeout_seconds    = 120
     ingress_settings   = "ALLOW_INTERNAL_ONLY"
   }
 }
@@ -105,13 +116,14 @@ module "internal_refresh_cf" {
     GOOGLE_TASK_QUEUE        = google_cloud_tasks_queue.import_queue.name
     IMPORT_TASK_URL          = "${module.internal_import_cf.function_uri}/import"
     REDIS_URL                = local.redis_url
-    REDIS_INSERT_CONCURRENCY = "10000"
-    IMPORT_BATCH_SIZE        = "30000"
+    REDIS_INSERT_CONCURRENCY = var.redis_insert_concurrency
+    IMPORT_BATCH_SIZE        = var.import_batch_size
   }
   service_config = {
-    max_instance_count = 10
+    max_instance_count = 1
     min_instance_count = 0
-    available_memory   = "256M"
+    available_memory   = "256Mi"
+    available_cpu      = "0.167"
     timeout_seconds    = 60
     ingress_settings   = "ALLOW_INTERNAL_ONLY"
   }
@@ -135,7 +147,8 @@ module "external_cf" {
   service_config = {
     max_instance_count = 10
     min_instance_count = 1
-    available_memory   = "256M"
+    available_memory   = "256Mi"
+    available_cpu      = "0.167"
     timeout_seconds    = 60
     ingress_settings   = "ALLOW_INTERNAL_AND_GCLB"
   }

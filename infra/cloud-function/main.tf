@@ -54,6 +54,7 @@ variable "service_config" {
     max_instance_count = number
     min_instance_count = number
     available_memory   = string
+    available_cpu      = string
     timeout_seconds    = number
     ingress_settings   = string
   })
@@ -61,6 +62,7 @@ variable "service_config" {
     max_instance_count = 5
     min_instance_count = 1
     available_memory   = "256M"
+    available_cpu      = "0.167"
     timeout_seconds    = 60
     ingress_settings   = "ALLOW_INTERNAL_AND_GCLB"
   }
@@ -120,6 +122,7 @@ resource "google_cloudfunctions2_function" "function" {
     max_instance_count    = var.service_config.max_instance_count
     min_instance_count    = var.service_config.min_instance_count
     available_memory      = var.service_config.available_memory
+    available_cpu         = var.service_config.available_cpu
     timeout_seconds       = var.service_config.timeout_seconds
     ingress_settings      = var.service_config.ingress_settings
 
