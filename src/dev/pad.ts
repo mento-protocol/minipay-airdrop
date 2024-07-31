@@ -7,7 +7,6 @@ import { handleImport } from "../operations/handle-import.js";
 import { getAllocation } from "../operations/get-allocation.js";
 import { credentials } from "@grpc/grpc-js";
 import { CloudTasksClient } from "@google-cloud/tasks";
-import { Tasks } from "../services/tasks.js";
 
 const _refresh = handleRefresh.pipe(
   Effect.tap(Console.log),
@@ -48,31 +47,6 @@ const _getLatest = getLatestExecution.pipe(
   Effect.scoped,
 );
 
-const _createQueue = Effect.gen(function* () {
-  yield* Effect.promise(async () => {
-    const client = new CloudTasksClient({
-      port: 9999,
-      servicePath: "localhost",
-      sslCreds: credentials.createInsecure(),
-    });
-    const request = {
-      queue: {
-        name: "projects/dev/locations/here/queues/import",
-        rateLimits: {
-          maxDispatchesPerSecond: 1,
-          maxConcurrentDispatches: 1,
-          maxBurstSize: 1,
-        },
-        retryConfig: {
-          maxAttempts: 1,
-        },
-      },
-      parent: "projects/dev/locations/here",
-    };
-    await client.createQueue(request);
-  });
-});
-
 const getProgram = () => {
   const cmd = process.argv[2];
   switch (cmd) {
@@ -86,10 +60,6 @@ const getProgram = () => {
       return _getAllocation;
     case "import":
       return _import;
-    case "createQueue":
-      return _createQueue;
-    case "queueRemoteTask":
-      return _queueRemoteTask;
     default:
       console.log("Unexpected script");
   }
