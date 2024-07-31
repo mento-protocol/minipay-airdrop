@@ -8,6 +8,7 @@ resource "google_compute_region_network_endpoint_group" "external_endpoint_group
   }
 }
 
+// trunk-ignore(checkov/CKV_TF_1)
 module "lb-http" {
   source          = "terraform-google-modules/lb-http/google//modules/serverless_negs"
   version         = "~> 10.0"

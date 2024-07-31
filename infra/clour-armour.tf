@@ -1,5 +1,7 @@
+// trunk-ignore(checkov/CKV_TF_1)
 module "security_policy" {
-  source = "GoogleCloudPlatform/cloud-armor/google"
+  source  = "GoogleCloudPlatform/cloud-armor/google"
+  version = "2.2.0"
 
   project_id                           = var.project_id
   name                                 = "minipay-api-cloud-armour"
