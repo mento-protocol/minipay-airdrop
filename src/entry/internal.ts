@@ -36,6 +36,7 @@ const internalApp = pipe(
   RouterBuilder.handle("refresh", () => {
     return handleRefresh.pipe(
       Effect.tapError(Effect.logError),
+      Effect.provide(Tasks.live),
       Effect.map(() => undefined), // No response body
     );
   }),
@@ -52,7 +53,6 @@ export const internal = internalApp.pipe(
   Effect.provide(NodeSwaggerFiles.SwaggerFilesLive),
   Effect.provide(NodeContext.layer),
   Effect.provide(Database.live),
-  Effect.provide(Tasks.live),
   HttpApp.toWebHandler,
   toCloudFunctionHandler,
 );

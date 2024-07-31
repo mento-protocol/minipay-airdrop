@@ -5,14 +5,14 @@ export const numberFromEnv = (key: string, defaultValue?: number) =>
   pipe(
     process.env[key],
     Schema.decodeUnknownOption(Schema.NumberFromString),
-    defaultValue ? Option.getOrElse(() => defaultValue) : Option.getOrNull,
+    defaultValue ? Option.getOrElse(() => defaultValue) : Option.getOrThrow,
   );
 
 export const stringFromEnv = (key: string, defaultValue?: string) =>
   pipe(
     process.env[key],
     Option.fromNullable,
-    defaultValue ? Option.getOrElse(() => defaultValue) : Option.getOrNull,
+    defaultValue ? Option.getOrElse(() => defaultValue) : Option.getOrThrow,
   );
 
 export const IMPORT_BATCH_SIZE = numberFromEnv("BATCH_SIZE", 10000);
