@@ -1,6 +1,6 @@
 import { Console, Effect, Schedule } from "effect";
-import { getClientAndQueue } from "../services/tasks.js";
-import { GOOGLE_LOCATION, GOOGLE_PROJECT } from "../constants.js";
+import { Tasks } from "../services/tasks.js";
+import { stringFromEnv } from "../constants.js";
 
 class TaskQueueError {
   readonly __tag = "TaskQueueError";
@@ -8,14 +8,17 @@ class TaskQueueError {
 }
 
 const createDevQueue = Effect.gen(function* () {
-  const { client, queue } = getClientAndQueue();
+  const { client, queue } = yield* Tasks;
   yield* Effect.addFinalizer(() =>
     Effect.sync(() => {
       client.close();
     }),
   );
 
-  const parent = client.locationPath(GOOGLE_PROJECT, GOOGLE_LOCATION);
+  const parent = client.locationPath(
+    stringFromEnv("GOOGLE_PROJECT"),
+    stringFromEnv("GOOGLE_LOCATION"),
+  );
   const request = {
     queue: {
       name: queue,
@@ -49,7 +52,8 @@ const createDevQueue = Effect.gen(function* () {
 });
 
 createDevQueue.pipe(
-  Effect.scoped,
+  Effect.provide(Tasks.live),
   Effect.tap(Console.log("Queue Created!")),
+  Effect.scoped,
   Effect.runPromiseExit,
 );

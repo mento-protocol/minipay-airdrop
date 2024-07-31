@@ -2,7 +2,7 @@ import { Schema } from "@effect/schema";
 import { Context, Effect, Layer, pipe, Option } from "effect";
 import IORedis from "ioredis";
 import { AllocationQueryRow } from "./dune.js";
-import { REDIS_ALLOCATION_KEY_EXPIRY } from "../constants.js";
+import { numberFromEnv } from "../constants.js";
 
 const { map, flatMap, tryPromise } = Effect;
 
@@ -69,6 +69,7 @@ export class Database extends Context.Tag("Database")<
   Database,
   {
     readonly client: IORedis.Redis;
+    readonly allocationKeyExpiry: number;
   }
 >() {
   static readonly live = Layer.effect(
@@ -79,6 +80,10 @@ export class Database extends Context.Tag("Database")<
       map((client) =>
         Database.of({
           client,
+          allocationKeyExpiry: numberFromEnv(
+            "REDIS_ALLOCATION_KEY_EXPIRY",
+            60 * 60 * 24 * 3, // 3 days
+          ),
         }),
       ),
       Effect.tap((db) =>
@@ -211,8 +216,8 @@ export const saveAllocations = (
   executionId: string,
   allocations: readonly AllocationQueryRow[],
 ) =>
-  getClient.pipe(
-    flatMap((client) =>
+  Database.pipe(
+    flatMap(({ client, allocationKeyExpiry }) =>
       tryPromise({
         try: async () => {
           let batch = client.multi();
@@ -223,7 +228,7 @@ export const saveAllocations = (
                   executionId,
                   allocation.address,
                 ),
-                REDIS_ALLOCATION_KEY_EXPIRY,
+                allocationKeyExpiry,
                 allocation.avg_amount_held,
               )
               .setex(
@@ -231,7 +236,7 @@ export const saveAllocations = (
                   executionId,
                   allocation.address,
                 ),
-                REDIS_ALLOCATION_KEY_EXPIRY,
+                allocationKeyExpiry,
                 allocation.amount_transferred,
               );
           });

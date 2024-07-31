@@ -1,58 +1,76 @@
 import { CloudTasksClient } from "@google-cloud/tasks";
 import { credentials } from "@grpc/grpc-js";
-import {
-  GOOGLE_LOCATION,
-  GOOGLE_PROJECT,
-  GOOGLE_TASK_QUEUE,
-  IMPORT_TASK_URL,
-} from "../constants.js";
-import { Effect } from "effect";
+import { stringFromEnv } from "../constants.js";
+import { Context, Effect, Layer, pipe } from "effect";
 
-let _client: CloudTasksClient | undefined;
-let _queue: string | undefined;
-
-export const getClientAndQueue: () => {
-  client: CloudTasksClient;
-  queue: string;
-} = () => {
-  if (_client == undefined) {
-    if (process.env.NODE_ENV == "development") {
-      _client = new CloudTasksClient({
-        port: 9999,
-        servicePath: "localhost",
-        sslCreds: credentials.createInsecure(),
-      });
-    } else {
-      _client = new CloudTasksClient();
-    }
-    _queue = _client.queuePath(
-      GOOGLE_PROJECT,
-      GOOGLE_LOCATION,
-      GOOGLE_TASK_QUEUE,
-    );
+export class Tasks extends Context.Tag("Tasks")<
+  Tasks,
+  {
+    readonly client: CloudTasksClient;
+    readonly queue: string;
+    readonly importUrl: string;
+    readonly invokerServiceAccountEmail: string;
   }
-
-  return { client: _client!, queue: _queue! };
-};
+>() {
+  static readonly live = Layer.effect(
+    Tasks,
+    pipe(
+      Effect.sync(() => {
+        if (process.env.NODE_ENV == "development") {
+          return new CloudTasksClient({
+            port: 9999,
+            servicePath: "localhost",
+            sslCreds: credentials.createInsecure(),
+          });
+        } else {
+          return new CloudTasksClient();
+        }
+      }),
+      Effect.orDie,
+      Effect.map((client) =>
+        Tasks.of({
+          client,
+          queue: client.queuePath(
+            stringFromEnv("GOOGLE_PROJECT"),
+            stringFromEnv("GOOGLE_LOCATION"),
+            stringFromEnv("GOOGLE_TASK_QUEUE"),
+          ),
+          importUrl: stringFromEnv("IMPORT_TASK_URL"),
+          invokerServiceAccountEmail: stringFromEnv(
+            "INVOKER_SERVICE_ACCOUNT_EMAIL",
+          ),
+        }),
+      ),
+      Effect.tap(({ client }) =>
+        Effect.addFinalizer(() => Effect.promise(client.close)),
+      ),
+    ),
+  );
+}
 
 export const createImportTask = (payload: object) =>
-  Effect.gen(function* () {
-    const { client, queue } = getClientAndQueue();
-    const task = {
-      httpRequest: {
-        httpMethod: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: Buffer.from(JSON.stringify(payload)),
-        url: IMPORT_TASK_URL,
-      },
-    } as const;
-
-    yield* Effect.promise(() =>
-      client.createTask({
-        parent: queue,
-        task,
-      }),
-    );
-  });
+  Tasks.pipe(
+    Effect.flatMap((tasks) =>
+      pipe(
+        Effect.promise(async () => {
+          await tasks.client.createTask({
+            parent: tasks.queue,
+            task: {
+              httpRequest: {
+                httpMethod: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: Buffer.from(JSON.stringify(payload)),
+                url: tasks.importUrl,
+                oidcToken: {
+                  serviceAccountEmail: tasks.invokerServiceAccountEmail,
+                  audience: tasks.importUrl,
+                },
+              },
+            },
+          });
+        }),
+      ),
+    ),
+  );

@@ -8,6 +8,7 @@ import { handleRefresh } from "../operations/handle-refresh.js";
 import { handleImport } from "../operations/handle-import.js";
 import { NodeSwaggerFiles } from "effect-http-node";
 import { Database } from "../services/database.js";
+import { Tasks } from "../services/tasks.js";
 
 export const ImportBody = Schema.Struct({
   executionId: Schema.String,
@@ -50,6 +51,7 @@ export const internal = internalApp.pipe(
   Effect.provide(NodeSwaggerFiles.SwaggerFilesLive),
   Effect.provide(NodeContext.layer),
   Effect.provide(Database.live),
+  Effect.provide(Tasks.live),
   HttpApp.toWebHandler,
   toCloudFunctionHandler,
 );
