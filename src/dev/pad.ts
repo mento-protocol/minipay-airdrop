@@ -1,4 +1,4 @@
-import { Console, Effect } from "effect";
+import { Console, Effect, pipe } from "effect";
 import { Database, getLatestExecution } from "../services/database.js";
 import { DUNE_AIRDROP_QUERY_ID } from "../constants.js";
 import { latestQueryResults } from "../services/dune.js";
@@ -7,6 +7,7 @@ import { handleImport } from "../operations/handle-import.js";
 import { getAllocation } from "../operations/get-allocation.js";
 import { credentials } from "@grpc/grpc-js";
 import { CloudTasksClient } from "@google-cloud/tasks";
+import { Tasks } from "../services/tasks.js";
 
 const _refresh = handleRefresh.pipe(
   Effect.tap(Console.log),
@@ -87,6 +88,8 @@ const getProgram = () => {
       return _import;
     case "createQueue":
       return _createQueue;
+    case "queueRemoteTask":
+      return _queueRemoteTask;
     default:
       console.log("Unexpected script");
   }

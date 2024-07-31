@@ -4,6 +4,7 @@ import {
 } from "@google-cloud/functions-framework";
 import { GetAllocationResponse } from "./entry/external.js";
 import { Address } from "./schema.js";
+import { Effect } from "effect";
 
 export const alloc = (
   address: Address,
@@ -42,11 +43,15 @@ export const toCloudFunctionHandler = (
   handler: (request: Request) => Promise<Response>,
 ): HttpFunction => {
   return async (req, res) => {
-    const nodeResponse = await handler(convertIncomingMessageToRequest(req));
-    nodeResponse.headers.forEach((value, key) => {
-      res.setHeader(key, value);
-    });
-    const resBody = await nodeResponse.text();
-    res.status(nodeResponse.status).send(resBody);
+    try {
+      const nodeResponse = await handler(convertIncomingMessageToRequest(req));
+      nodeResponse.headers.forEach((value, key) => {
+        res.setHeader(key, value);
+      });
+      const resBody = await nodeResponse.text();
+      res.status(nodeResponse.status).send(resBody);
+    } catch (e) {
+      Effect.logError(e).pipe(Effect.runSync);
+    }
   };
 };
