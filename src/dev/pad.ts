@@ -1,12 +1,10 @@
-import { Console, Effect, pipe } from "effect";
+import { Console, Effect } from "effect";
 import { Database, getLatestExecution } from "../services/database.js";
 import { DUNE_AIRDROP_QUERY_ID } from "../constants.js";
 import { latestQueryResults } from "../services/dune.js";
 import { handleRefresh } from "../operations/handle-refresh.js";
 import { handleImport } from "../operations/handle-import.js";
 import { getAllocation } from "../operations/get-allocation.js";
-import { credentials } from "@grpc/grpc-js";
-import { CloudTasksClient } from "@google-cloud/tasks";
 
 const _refresh = handleRefresh.pipe(
   Effect.tap(Console.log),

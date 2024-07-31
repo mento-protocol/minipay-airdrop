@@ -10,7 +10,6 @@ export class Tasks extends Context.Tag("Tasks")<
     readonly queue: string;
     readonly importUrl: string;
     readonly invokerServiceAccountEmail: string;
-    readonly invokerAudience: string;
   }
 >() {
   static readonly live = Layer.effect(
@@ -40,7 +39,6 @@ export class Tasks extends Context.Tag("Tasks")<
           invokerServiceAccountEmail: stringFromEnv(
             "INVOKER_SERVICE_ACCOUNT_EMAIL",
           ),
-          invokerAudience: stringFromEnv("INVOKER_AUDIENCE"),
         }),
       ),
       Effect.tap(({ client }) =>
