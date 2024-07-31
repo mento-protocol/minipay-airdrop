@@ -1,5 +1,5 @@
 import { Console, Effect } from "effect";
-import { Database } from "../services/database.js";
+import { Database, getLatestExecution } from "../services/database.js";
 import { DUNE_AIRDROP_QUERY_ID } from "../constants.js";
 import { latestQueryResults } from "../services/dune.js";
 import { handleRefresh } from "../operations/handle-refresh.js";
@@ -41,14 +41,10 @@ const _latestQuery = latestQueryResults(DUNE_AIRDROP_QUERY_ID, 5000000, 0).pipe(
   Effect.tapError(Console.log),
 );
 
-const _getLatest = Database.pipe(
-  Effect.flatMap((db) =>
-    db.getLatestExecution.pipe(
-      Effect.tap(Console.log),
-      Effect.provide(Database.live),
-      Effect.scoped,
-    ),
-  ),
+const _getLatest = getLatestExecution.pipe(
+  Effect.tap(Console.log),
+  Effect.provide(Database.live),
+  Effect.scoped,
 );
 
 const _createQueue = Effect.gen(function* () {

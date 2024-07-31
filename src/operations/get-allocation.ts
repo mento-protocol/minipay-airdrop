@@ -1,6 +1,9 @@
 import { Effect, Option, pipe } from "effect";
 import { Address } from "../schema.js";
-import { Database } from "../services/database.js";
+import {
+  getLatestExecution,
+  getAllocation as getAllocationFromCache,
+} from "../services/database.js";
 import { notFound } from "effect-http/HttpError";
 import { alloc } from "../utils.js";
 
@@ -16,39 +19,29 @@ export const noExecution = () => {
 
 export const getAllocation = (address: Address) =>
   pipe(
-    Database,
-    flatMap((db) =>
+    getLatestExecution,
+    flatMap(
+      Option.match({
+        onSome: Effect.succeed,
+        onNone: () => Effect.fail(noExecution()),
+      }),
+    ),
+    flatMap(({ executionId, timestamp }) =>
       pipe(
-        db.getLatestExecution,
-        flatMap(
-          Option.match({
-            onSome: Effect.succeed,
-            onNone: () => Effect.fail(noExecution()),
-          }),
-        ),
-        flatMap(({ executionId, timestamp }) =>
-          pipe(
-            db.getAllocation(executionId, address),
-            Effect.map(Option.map((r) => ({ ...r, timestamp }))),
-          ),
-        ),
-        flatMap(
-          Option.match({
-            onSome: Effect.succeed,
-            onNone: () => Effect.fail(noAllocation()),
-          }),
-        ),
-        map(({ transferVolume, averageHoldings, timestamp }) => {
-          const mentoFromTransfers = Math.min(transferVolume * 0.1, 100);
-          const mentoFromHoldings = Math.min(averageHoldings, 100);
-
-          return alloc(
-            address,
-            mentoFromHoldings,
-            mentoFromTransfers,
-            timestamp,
-          );
-        }),
+        getAllocationFromCache(executionId, address),
+        Effect.map(Option.map((r) => ({ ...r, timestamp }))),
       ),
     ),
+    flatMap(
+      Option.match({
+        onSome: Effect.succeed,
+        onNone: () => Effect.fail(noAllocation()),
+      }),
+    ),
+    map(({ transferVolume, averageHoldings, timestamp }) => {
+      const mentoFromTransfers = Math.min(transferVolume * 0.1, 100);
+      const mentoFromHoldings = Math.min(averageHoldings, 100);
+
+      return alloc(address, mentoFromHoldings, mentoFromTransfers, timestamp);
+    }),
   );

@@ -69,38 +69,6 @@ export class Database extends Context.Tag("Database")<
   Database,
   {
     readonly client: IORedis.Redis;
-    readonly getLatestExecution: Effect.Effect<
-      Option.Option<Execution>,
-      RedisError
-    >;
-    readonly getExecution: (
-      executionId: string,
-    ) => Effect.Effect<Option.Option<Execution>, RedisError>;
-    readonly saveExecution: (
-      execution: Execution,
-    ) => Effect.Effect<"OK", RedisError>;
-    readonly saveLatestExecution: (
-      execution: Execution,
-    ) => Effect.Effect<"OK", RedisError>;
-    readonly addExecutionToIndex: (
-      execution: Execution,
-    ) => Effect.Effect<number, RedisError>;
-    readonly getExecutions: Effect.Effect<ExecutionsIndex, RedisError>;
-    readonly saveAllocations: (
-      executionId: string,
-      allocations: readonly AllocationQueryRow[],
-    ) => Effect.Effect<"OK", RedisError>;
-    readonly incrementAllocationsImported: (
-      executionId: string,
-      value: number,
-    ) => Effect.Effect<number, RedisError>;
-    readonly resetAllocationsImported: (
-      executionId: string,
-    ) => Effect.Effect<number, RedisError>;
-    readonly getAllocation: (
-      executionId: string,
-      address: string,
-    ) => Effect.Effect<Option.Option<Allocation>, RedisError>;
   }
 >() {
   static readonly live = Layer.effect(
@@ -111,16 +79,6 @@ export class Database extends Context.Tag("Database")<
       map((client) =>
         Database.of({
           client,
-          getLatestExecution: getLatestExecution(client),
-          getExecution: getExecution(client),
-          saveExecution: saveExecution(client),
-          saveLatestExecution: saveLatestExecution(client),
-          addExecutionToIndex: addExecutionToIndex(client),
-          getExecutions: getExecutions(client),
-          saveAllocations: saveAllocations(client),
-          incrementAllocationsImported: incrementAllocationsImported(client),
-          resetAllocationsImported: resetAllocationsImported(client),
-          getAllocation: getAllocation(client),
         }),
       ),
       Effect.tap((db) =>
@@ -129,6 +87,8 @@ export class Database extends Context.Tag("Database")<
     ),
   );
 }
+
+const getClient = Database.pipe(map((db) => db.client));
 
 const hidrateExecution = (
   value: Option.Option<string>,
@@ -155,142 +115,187 @@ const hidrateExecution = (
     }),
   );
 
-const getLatestExecution = (client: IORedis.Redis) =>
-  pipe(
-    tryPromise({
-      try: () => client.get(KEYS.LATEST_EXECUTION),
-      catch: redisError,
-    }),
-    map(Option.fromNullable),
-    flatMap(hidrateExecution),
-  );
+export const getLatestExecution = getClient.pipe(
+  flatMap((client) =>
+    pipe(
+      tryPromise({
+        try: () => client.get(KEYS.LATEST_EXECUTION),
+        catch: redisError,
+      }),
+      map(Option.fromNullable),
+      flatMap(hidrateExecution),
+    ),
+  ),
+);
 
-const getExecution = (client: IORedis.Redis) => (id: string) =>
-  pipe(
-    tryPromise({
-      try: () => client.get(KEYS.EXECUTION(id)),
-      catch: redisError,
-    }),
-    map(Option.fromNullable),
-    flatMap(hidrateExecution),
-  );
-
-const saveLatestExecution = (client: IORedis.Redis) => (execution: Execution) =>
-  tryPromise({
-    try: () => client.set(KEYS.LATEST_EXECUTION, JSON.stringify(execution)),
-    catch: redisError,
-  });
-
-const saveExecution = (client: IORedis.Redis) => (execution: Execution) =>
-  tryPromise({
-    try: () =>
-      client.set(
-        KEYS.EXECUTION(execution.executionId),
-        JSON.stringify(execution),
+export const getExecution = (id: string) =>
+  getClient.pipe(
+    flatMap((client) =>
+      pipe(
+        tryPromise({
+          try: () => client.get(KEYS.EXECUTION(id)),
+          catch: redisError,
+        }),
+        map(Option.fromNullable),
+        flatMap(hidrateExecution),
       ),
-    catch: redisError,
-  });
-
-const addExecutionToIndex = (client: IORedis.Redis) => (execution: Execution) =>
-  tryPromise({
-    try: () =>
-      client.zadd(
-        KEYS.EXECUTION_INDEX,
-        execution.timestamp,
-        execution.executionId,
-      ),
-    catch: redisError,
-  });
-
-const getExecutions = (client: IORedis.Redis) =>
-  pipe(
-    tryPromise({
-      try: () => client.zrevrangebyscore(KEYS.EXECUTION_INDEX, 0, -1),
-      catch: redisError,
-    }),
-    map((result) => {
-      const executions: Array<{ executionId: unknown; timestamp: unknown }> =
-        [];
-      for (let i = 0; i < result.length / 2; i++) {
-        executions.push({
-          executionId: result[i * 2],
-          timestamp: result[i * 2 + 1],
-        });
-      }
-      return executions;
-    }),
-    flatMap(Schema.decodeUnknown(ExecutionsIndex)),
-    Effect.catchTag("ParseError", (e) =>
-      pipe(e, Effect.logError, Effect.andThen(Effect.succeed([]))),
     ),
   );
 
-const saveAllocations =
-  (client: IORedis.Redis) =>
-  (executionId: string, allocations: readonly AllocationQueryRow[]) =>
-    tryPromise({
-      try: async () => {
-        let batch = client.multi();
-        allocations.forEach((allocation) => {
-          batch = batch
-            .setex(
-              KEYS.ALLOCATION_AVERAGE_HOLDINGS(executionId, allocation.address),
-              REDIS_ALLOCATION_KEY_EXPIRY,
-              allocation.avg_amount_held,
-            )
-            .setex(
-              KEYS.ALLOCATION_TRANSFER_VOLUME(executionId, allocation.address),
-              REDIS_ALLOCATION_KEY_EXPIRY,
-              allocation.amount_transferred,
+export const saveLatestExecution = (execution: Execution) =>
+  getClient.pipe(
+    flatMap((client) =>
+      tryPromise({
+        try: () => client.set(KEYS.LATEST_EXECUTION, JSON.stringify(execution)),
+        catch: redisError,
+      }),
+    ),
+  );
+
+export const saveExecution = (execution: Execution) =>
+  getClient.pipe(
+    flatMap((client) =>
+      tryPromise({
+        try: () =>
+          client.set(
+            KEYS.EXECUTION(execution.executionId),
+            JSON.stringify(execution),
+          ),
+        catch: redisError,
+      }),
+    ),
+  );
+
+export const addExecutionToIndex = (execution: Execution) =>
+  getClient.pipe(
+    flatMap((client) =>
+      tryPromise({
+        try: () =>
+          client.zadd(
+            KEYS.EXECUTION_INDEX,
+            execution.timestamp,
+            execution.executionId,
+          ),
+        catch: redisError,
+      }),
+    ),
+  );
+
+export const getExecutions = getClient.pipe(
+  flatMap((client) =>
+    pipe(
+      tryPromise({
+        try: () => client.zrevrangebyscore(KEYS.EXECUTION_INDEX, 0, -1),
+        catch: redisError,
+      }),
+      map((result) => {
+        const executions: Array<{ executionId: unknown; timestamp: unknown }> =
+          [];
+        for (let i = 0; i < result.length / 2; i++) {
+          executions.push({
+            executionId: result[i * 2],
+            timestamp: result[i * 2 + 1],
+          });
+        }
+        return executions;
+      }),
+      flatMap(Schema.decodeUnknown(ExecutionsIndex)),
+      Effect.catchTag("ParseError", (e) =>
+        pipe(e, Effect.logError, Effect.andThen(Effect.succeed([]))),
+      ),
+    ),
+  ),
+);
+
+export const saveAllocations = (
+  executionId: string,
+  allocations: readonly AllocationQueryRow[],
+) =>
+  getClient.pipe(
+    flatMap((client) =>
+      tryPromise({
+        try: async () => {
+          let batch = client.multi();
+          allocations.forEach((allocation) => {
+            batch = batch
+              .setex(
+                KEYS.ALLOCATION_AVERAGE_HOLDINGS(
+                  executionId,
+                  allocation.address,
+                ),
+                REDIS_ALLOCATION_KEY_EXPIRY,
+                allocation.avg_amount_held,
+              )
+              .setex(
+                KEYS.ALLOCATION_TRANSFER_VOLUME(
+                  executionId,
+                  allocation.address,
+                ),
+                REDIS_ALLOCATION_KEY_EXPIRY,
+                allocation.amount_transferred,
+              );
+          });
+          const responses = await batch.exec();
+          if (responses === null) {
+            throw new Error("null batch response");
+          }
+          const errors = responses.map((v) => v[0]).filter((v) => v != null);
+          if (errors.length > 0) {
+            throw new Error(
+              `batch failed [${errors.length} errors] ${errors[0]?.message}`,
             );
-        });
-        const responses = await batch.exec();
-        if (responses === null) {
-          throw new Error("null batch response");
-        }
-        const errors = responses.map((v) => v[0]).filter((v) => v != null);
-        if (errors.length > 0) {
-          throw new Error(
-            `batch failed [${errors.length} errors] ${errors[0]?.message}`,
-          );
-        } else {
-          return "OK" as const;
-        }
-      },
-      catch: redisError,
-    });
-
-const incrementAllocationsImported =
-  (client: IORedis.Redis) => (executionId: string, value: number) =>
-    tryPromise({
-      try: () => client.incrby(KEYS.ALLOCATIONS_IMPORTED(executionId), value),
-      catch: redisError,
-    });
-
-const resetAllocationsImported =
-  (client: IORedis.Redis) => (executionId: string) =>
-    tryPromise({
-      try: () => client.del(KEYS.ALLOCATIONS_IMPORTED(executionId)),
-      catch: redisError,
-    });
-
-const getAllocation =
-  (client: IORedis.Redis) => (executionId: string, address: string) =>
-    Effect.zipWith(
-      tryPromise({
-        try: () =>
-          client.get(KEYS.ALLOCATION_TRANSFER_VOLUME(executionId, address)),
+          } else {
+            return "OK" as const;
+          }
+        },
         catch: redisError,
       }),
+    ),
+  );
+
+export const incrementAllocationsImported = (
+  executionId: string,
+  value: number,
+) =>
+  getClient.pipe(
+    flatMap((client) =>
       tryPromise({
-        try: () =>
-          client.get(KEYS.ALLOCATION_AVERAGE_HOLDINGS(executionId, address)),
+        try: () => client.incrby(KEYS.ALLOCATIONS_IMPORTED(executionId), value),
         catch: redisError,
       }),
-      (transferVolume, averageHoldings) => {
-        return Schema.decodeUnknownOption(Allocation)({
-          transferVolume,
-          averageHoldings,
-        });
-      },
-    );
+    ),
+  );
+
+export const resetAllocationsImported = (executionId: string) =>
+  getClient.pipe(
+    flatMap((client) =>
+      tryPromise({
+        try: () => client.del(KEYS.ALLOCATIONS_IMPORTED(executionId)),
+        catch: redisError,
+      }),
+    ),
+  );
+
+export const getAllocation = (executionId: string, address: string) =>
+  getClient.pipe(
+    flatMap((client) =>
+      Effect.zipWith(
+        tryPromise({
+          try: () =>
+            client.get(KEYS.ALLOCATION_TRANSFER_VOLUME(executionId, address)),
+          catch: redisError,
+        }),
+        tryPromise({
+          try: () =>
+            client.get(KEYS.ALLOCATION_AVERAGE_HOLDINGS(executionId, address)),
+          catch: redisError,
+        }),
+        (transferVolume, averageHoldings) => {
+          return Schema.decodeUnknownOption(Allocation)({
+            transferVolume,
+            averageHoldings,
+          });
+        },
+      ),
+    ),
+  );
