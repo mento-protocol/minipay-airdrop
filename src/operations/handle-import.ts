@@ -69,5 +69,6 @@ export const handleImport = (params: ImportBody) =>
       ),
     ),
     flatMap(finalizeImportIfFinished),
+    Effect.tapError(Effect.logError),
     Effect.annotateLogs(params),
   );
