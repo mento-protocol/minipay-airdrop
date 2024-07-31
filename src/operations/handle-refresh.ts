@@ -21,7 +21,6 @@ import {
 import { LatestQueryResultsResponse, StatsQueryRow } from "../services/dune.js";
 import { Schema } from "@effect/schema";
 import { createImportTask } from "../services/tasks.js";
-import { serviceUnavailable } from "effect-http/HttpError";
 
 const { andThen, flatMap, retry, fail, sleep, map, tap } = Effect;
 const { when, orElse, whenAnd, value } = Match;
@@ -30,7 +29,7 @@ const queryStatsUntilExecutionChanges = (executionId: string) =>
   pipe(
     latestQueryResults(DUNE_AIRDROP_STATS_QUERY_ID, 1, 0),
     flatMap((query) =>
-      Match.value(query).pipe(
+      value(query).pipe(
         when(
           {
             execution_id: executionId,
@@ -85,8 +84,8 @@ const scheduleImportTasks = (duneExecution: LatestQueryResultsResponse) =>
   pipe(
     Effect.succeed(
       // Number of batches
-      process.env.NODE_ENV == "development"
-        ? 1 // Single batch on development
+      process.env.FORCE_SINGLE_BATCH == "true"
+        ? 1 // DEV: Import a single batch on development
         : Math.ceil(
             duneExecution.result.metadata.total_row_count / IMPORT_BATCH_SIZE,
           ),
@@ -136,7 +135,7 @@ export const handleRefresh = pipe(
         pipe(
           value(execution),
           whenAnd(
-            { importFinished: true },
+            { importFinished: false },
             {
               timestamp: (timestamp) =>
                 Duration.greaterThan(
@@ -146,7 +145,7 @@ export const handleRefresh = pipe(
             },
             () => startImport(duneExecution),
           ),
-          orElse(() => Effect.fail(serviceUnavailable())),
+          orElse(() => Effect.succeedNone),
         ),
     }),
   ),

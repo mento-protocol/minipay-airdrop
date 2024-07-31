@@ -114,7 +114,6 @@ module "internal_refresh_cf" {
     INVOKER_AUDIENCE              = module.internal_import_cf.function_uri
     REDIS_URL                     = local.redis_url
     IMPORT_BATCH_SIZE             = var.import_batch_size
-
   }
   service_config = {
     max_instance_count = 1

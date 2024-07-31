@@ -11,7 +11,7 @@ import {
   saveLatestExecution,
 } from "../services/database.js";
 
-const { flatMap, map, andThen, zipWith } = Effect;
+const { flatMap, map, andThen, zipWith, zip, succeed, log } = Effect;
 
 export const finalizeImportIfFinished = ({
   totalRowsImported,
@@ -21,26 +21,25 @@ export const finalizeImportIfFinished = ({
   execution: Execution;
 }) => {
   if (
-    process.env.NODE_ENV == "development" || // Short-circuit on development
+    process.env.FORCE_SINGLE_BATCH == "true" || // Short-circuit on development
     totalRowsImported == execution.rows
   ) {
     return pipe(
-      Effect.log("finished import"),
-      andThen(
+      zip(
         saveLatestExecution({
           ...execution,
           importFinished: true,
         }),
-      ),
-      andThen(
         saveExecution({
           ...execution,
           importFinished: true,
         }),
+        { concurrent: true },
       ),
+      andThen(log("finished import")),
     );
   } else {
-    return Effect.succeed("OK" as const);
+    return succeed("OK" as const);
   }
 };
 

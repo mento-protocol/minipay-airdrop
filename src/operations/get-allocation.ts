@@ -20,25 +20,15 @@ export const noExecution = () => {
 export const getAllocation = (address: Address) =>
   pipe(
     getLatestExecution,
-    flatMap(
-      Option.match({
-        onSome: Effect.succeed,
-        onNone: () => Effect.fail(noExecution()),
-      }),
-    ),
-    flatMap(({ executionId, timestamp }) =>
+    map(Option.getOrThrowWith(noExecution)),
+    flatMap((execution) =>
       pipe(
-        getAllocationFromCache(executionId, address),
-        Effect.map(Option.map((r) => ({ ...r, timestamp }))),
+        getAllocationFromCache(execution.executionId, address),
+        map(Option.getOrThrowWith(noAllocation)),
+        Effect.zip(Effect.succeed(execution)),
       ),
     ),
-    flatMap(
-      Option.match({
-        onSome: Effect.succeed,
-        onNone: () => Effect.fail(noAllocation()),
-      }),
-    ),
-    map(({ transferVolume, averageHoldings, timestamp }) => {
+    map(([{ transferVolume, averageHoldings }, { timestamp }]) => {
       const mentoFromTransfers = Math.min(transferVolume * 0.1, 100);
       const mentoFromHoldings = Math.min(averageHoldings, 100);
 
