@@ -81,7 +81,8 @@ module "internal_import_cf" {
   Internal API for running the tasks that import data from Dune into Redis to be served by the external API
   EOF
   env_vars = {
-    REDIS_URL = local.redis_url
+    GOOGLE_PROJECT = var.project_id
+    REDIS_URL      = local.redis_url
   }
   service_config = {
     max_instance_count = 40
@@ -138,7 +139,8 @@ module "external_cf" {
   External API for getting the MiniPay airdrop allocation.
   EOF
   env_vars = {
-    REDIS_URL = local.redis_url
+    GOOGLE_PROJECT = var.project_id
+    REDIS_URL      = local.redis_url
   }
   service_config = {
     max_instance_count = 10
