@@ -9,6 +9,7 @@ import { handleImport } from "../operations/handle-import.js";
 import { NodeSwaggerFiles } from "effect-http-node";
 import { Database } from "../services/database.js";
 import { Tasks } from "../services/tasks.js";
+import { logMiddleware } from "../logger.js";
 
 export const ImportBody = Schema.Struct({
   executionId: Schema.String,
@@ -50,6 +51,7 @@ const internalApp = pipe(
 
 export const internal = internalApp.pipe(
   HttpMiddleware.logger,
+  logMiddleware,
   Effect.provide(NodeSwaggerFiles.SwaggerFilesLive),
   Effect.provide(NodeContext.layer),
   Effect.provide(Database.live),

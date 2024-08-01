@@ -9,6 +9,7 @@ import { Api } from "effect-http";
 import { Address } from "../schema.js";
 import { getAllocation } from "../operations/get-allocation.js";
 import { Database } from "../services/database.js";
+import { logMiddleware } from "../logger.js";
 
 const GetAllocationResponse = Schema.Struct({
   address: Address,
@@ -65,6 +66,7 @@ export const external = externalApp.pipe(
     allowedMethods: ["GET", "OPTIONS"],
   }),
   HttpMiddleware.logger,
+  logMiddleware,
   Effect.provide(NodeSwaggerFiles.SwaggerFilesLive),
   Effect.provide(NodeContext.layer),
   HttpApp.toWebHandler,

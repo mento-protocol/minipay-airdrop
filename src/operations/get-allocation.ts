@@ -1,4 +1,4 @@
-import { Effect, Option, pipe } from "effect";
+import { Console, Effect, Option, pipe } from "effect";
 import { Address } from "../schema.js";
 import {
   getLatestExecution,
@@ -20,11 +20,13 @@ export const noExecution = () => {
 export const getAllocation = (address: Address) =>
   pipe(
     getLatestExecution,
-    map(Option.getOrThrowWith(noExecution)),
+    flatMap((v) => Effect.try(() => Option.getOrThrow(v))),
+    Effect.orElseFail(noExecution),
     flatMap((execution) =>
       pipe(
         getAllocationFromCache(execution.executionId, address),
-        map(Option.getOrThrowWith(noAllocation)),
+        flatMap((v) => Effect.try(() => Option.getOrThrow(v))),
+        Effect.orElseFail(noAllocation),
         Effect.zip(Effect.succeed(execution)),
       ),
     ),
