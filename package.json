@@ -14,7 +14,7 @@
     "dev:create-queue": "tsx --env-file=.env.local src/dev/create-dev-queue.ts",
     "dev:stream": "turbo dev:services dev:internal dev:external dev:create-queue",
     "dev:tui": "turbo dev:services dev:internal dev:external dev:create-queue build:watch --ui tui",
-    "dev:mock-server": "tsx src/dev/mock-server.ts",
+    "dev:mock-server": "tsx --env-file=.env.local src/dev/mock-server.ts",
     "pad": "tsx --env-file=.env.local ./src/dev/pad.ts",
     "build:watch": "tsc --watch",
     "build:ts": "tsc"
