@@ -262,6 +262,21 @@ r.SET(
 
 This approach ensures that the system always serves the most recent data while automatically managing storage by removing outdated information. It provides a balance between data freshness and efficient use of Redis storage, with the eviction policy adding an extra layer of protection against memory exhaustion.
 
+### Connecting to the production Redis
+
+You can connct to the production database by connecting the the cloud network and portforwarding the Redis instance locally and connecting to it with `redis-cli`.
+
+```bash
+   gcloud compute ssh port-forward-temporary --zone=us-central1-a -- -N -L <local-port>:<redis-ip>:6379
+```
+
+You must replace:
+
+- `<local-port>` with the port you want locally, that can still be `6379` if you're not running a local redis instance
+- `<redis-ip>` can be found in google cloud by inspecting the Redis instance
+
+> `port-forward-temporary` is a small compute instance that's required to allow port forwarding, I named it temporary but it will probably stick around.
+
 ## Deployment
 
 This section describes how to deploy the MiniPay Airdrop infrastructure using Terraform while impersonating a Google Cloud service account. This method allows for secure, local deployments without the need for long-lived credential files.

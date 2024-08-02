@@ -112,7 +112,6 @@ module "internal_refresh_cf" {
     GOOGLE_TASK_QUEUE             = google_cloud_tasks_queue.import_queue.name
     IMPORT_TASK_URL               = "${module.internal_import_cf.function_uri}/import"
     INVOKER_SERVICE_ACCOUNT_EMAIL = google_service_account.internal_invoker.email
-    INVOKER_AUDIENCE              = module.internal_import_cf.function_uri
     REDIS_URL                     = local.redis_url
     IMPORT_BATCH_SIZE             = var.import_batch_size
   }
