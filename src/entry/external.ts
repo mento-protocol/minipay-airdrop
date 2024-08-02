@@ -13,12 +13,21 @@ import { logMiddleware } from "../logger.js";
 
 const GetAllocationResponse = Schema.Struct({
   address: Address,
-  total: Schema.Number,
-  refreshedAt: Schema.Number,
-  byTask: Schema.Struct({
-    hold: Schema.Number,
-    transfer: Schema.Number,
+  stats: Schema.Struct({
+    cUSDAverageBalance: Schema.Number,
+    cUSDTransferVolume: Schema.Number,
   }),
+  allocation: Schema.Struct({
+    mento: Schema.Struct({
+      fromHoldings: Schema.Number,
+      fromTransfers: Schema.Number,
+    }),
+    cUSD: Schema.Struct({
+      fromHoldings: Schema.Number,
+      fromTransfers: Schema.Number,
+    }),
+  }),
+  refreshedAt: Schema.Number,
 });
 export type GetAllocationResponse = Schema.Schema.Type<
   typeof GetAllocationResponse

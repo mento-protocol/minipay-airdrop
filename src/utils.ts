@@ -8,18 +8,37 @@ import { Effect } from "effect";
 
 export const alloc = (
   address: Address,
-  hold: number,
-  transfer: number,
-  refreshedAt?: number,
-): GetAllocationResponse => ({
-  address,
-  total: hold + transfer,
-  byTask: { hold, transfer },
-  refreshedAt: refreshedAt ? refreshedAt : Date.now(),
-});
+  avgHoldings: number,
+  transferVolume: number,
+  refreshedAt: number,
+): GetAllocationResponse => {
+  const mentoFromHoldings = Math.min(avgHoldings, 100);
+  const mentoFromTransfers = Math.min(transferVolume * 0.1, 100);
+  const cUSDFromHoldings = mentoFromHoldings / 10;
+  const cUSDFromTransfers = mentoFromTransfers / 10;
+
+  return {
+    address,
+    refreshedAt,
+    stats: {
+      cUSDAverageBalance: avgHoldings,
+      cUSDTransferVolume: transferVolume,
+    },
+    allocation: {
+      mento: {
+        fromHoldings: mentoFromHoldings,
+        fromTransfers: mentoFromTransfers,
+      },
+      cUSD: {
+        fromHoldings: cUSDFromHoldings,
+        fromTransfers: cUSDFromTransfers,
+      },
+    },
+  };
+};
 
 export const randAlloc = (address: Address): GetAllocationResponse => {
-  return alloc(address, Math.random() * 100, Math.random() * 100);
+  return alloc(address, Math.random() * 300, Math.random() * 300, Date.now());
 };
 
 export const convertIncomingMessageToRequest = (

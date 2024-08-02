@@ -26,7 +26,7 @@ const app = RouterBuilder.make(api).pipe(
       case "0xc9D04AFEa3d50632Cd0ad879E858F043d17407Ae":
         return Effect.fail(internalServerError());
       case "0x556DDc9381dF097C4946De438a4272ECba26A496":
-        return Effect.succeed(alloc(address, 0, 0));
+        return Effect.succeed(alloc(address, 0, 0, Date.now()));
       case "0x126996CEFe1b367C66475b7A6208B6b6f0fD5648":
         return Effect.fail(noExecution());
       case "0xcad0ca3bD13E50e1Bd30fE64A4fBc16CAE6cbD31":
