@@ -20,3 +20,4 @@ export const CAMPAIGN_START_BLOCK = 26700546;
 export const DUNE_AIRDROP_QUERY_ID = 3932204;
 export const DUNE_AIRDROP_STATS_QUERY_ID = 3936853;
 export const DUNE_API_BASE_URL = "https://api.dune.com/api";
+export const MAX_MENTO_ALLOCATION = 10_000_000;

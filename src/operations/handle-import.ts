@@ -1,4 +1,4 @@
-import { Effect, Option, pipe } from "effect";
+import { Effect, Match, Option, pipe } from "effect";
 import { ImportBody } from "../entry/internal.js";
 import { Schema } from "@effect/schema";
 import { AllocationQueryRow, getExectionResults } from "../services/dune.js";
@@ -10,6 +10,7 @@ import {
   saveExecution,
   saveLatestExecution,
 } from "../services/database.js";
+import { MAX_MENTO_ALLOCATION } from "../constants.js";
 
 const { flatMap, map, andThen, zipWith, zip, succeed, log } = Effect;
 
@@ -37,6 +38,25 @@ export const finalizeImportIfFinished = ({
         { concurrent: true },
       ),
       andThen(log("finished import")),
+      andThen(
+        pipe(
+          Match.value(execution),
+          Match.when(
+            {
+              stats: (stats) => stats.mentoAllocated >= MAX_MENTO_ALLOCATION,
+            },
+            () =>
+              pipe(
+                log("airdrop maximum allocation met"),
+                Effect.annotateLogs({
+                  block: execution.stats.block,
+                  mentoAllcated: execution.stats.mentoAllocated,
+                }),
+              ),
+          ),
+          Match.orElse(() => succeed("OK" as const)),
+        ),
+      ),
     );
   } else {
     return succeed("OK" as const);

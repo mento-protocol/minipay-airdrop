@@ -219,4 +219,5 @@ export const getAllocation = (executionId: string, address: string) =>
         averageHoldings,
       });
     },
+    { concurrent: true },
   );

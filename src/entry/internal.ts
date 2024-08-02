@@ -36,7 +36,6 @@ const internalApp = pipe(
   RouterBuilder.make(api, { enableDocs: false }),
   RouterBuilder.handle("refresh", () => {
     return handleRefresh.pipe(
-      Effect.tapError(Effect.logError),
       Effect.provide(Tasks.live),
       Effect.map(() => undefined), // No response body
     );

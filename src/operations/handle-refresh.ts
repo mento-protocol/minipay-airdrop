@@ -12,15 +12,19 @@ import {
   DUNE_AIRDROP_QUERY_ID,
   DUNE_AIRDROP_STATS_QUERY_ID,
   IMPORT_BATCH_SIZE,
+  MAX_MENTO_ALLOCATION,
 } from "../constants.js";
 import {
+  Execution,
   getExecution,
+  getLatestExecution,
   resetAllocationsImported,
   saveExecution,
 } from "../services/database.js";
 import { LatestQueryResultsResponse, StatsQueryRow } from "../services/dune.js";
 import { Schema } from "@effect/schema";
 import { createImportTask } from "../services/tasks.js";
+import { serviceUnavailable } from "effect-http/HttpError";
 
 const { andThen, flatMap, retry, fail, sleep, map, tap } = Effect;
 const { when, orElse, whenAnd, value } = Match;
@@ -121,32 +125,65 @@ const startImport = (duneExecution: LatestQueryResultsResponse) =>
     andThen(scheduleImportTasks(duneExecution)),
   );
 
-export const handleRefresh = pipe(
+const checkLastExecution = pipe(
+  getLatestExecution,
+  flatMap(
+    Option.match({
+      onSome: ({ stats }) => {
+        if (stats.mentoAllocated >= MAX_MENTO_ALLOCATION) {
+          return pipe(
+            Effect.log("skipping import, airdrop finished"),
+            Effect.andThen(Effect.fail(serviceUnavailable())),
+          );
+        }
+        return Effect.succeedNone;
+      },
+      onNone: () => Effect.succeedNone,
+    }),
+  ),
+);
+
+export const getLatestExecutionFromDuneAndCache = pipe(
   latestQueryResults(DUNE_AIRDROP_QUERY_ID, 1, 0),
   flatMap((duneExecution) =>
     getExecution(duneExecution.execution_id).pipe(
       map((cacheExecution) => ({ duneExecution, cacheExecution })),
     ),
   ),
-  flatMap(({ cacheExecution, duneExecution }) =>
-    Option.match(cacheExecution, {
-      onNone: () => startImport(duneExecution),
-      onSome: (execution) =>
-        pipe(
-          value(execution),
-          whenAnd(
-            { importFinished: false },
-            {
-              timestamp: (timestamp) =>
-                Duration.greaterThan(
-                  Duration.millis(Date.now() - timestamp),
-                  Duration.decode("30 minutes"),
-                ),
-            },
-            () => startImport(duneExecution),
+);
+
+const restartImportIfCacheExecutionStale = (
+  execution: Execution,
+  duneExecution: LatestQueryResultsResponse,
+) =>
+  pipe(
+    value(execution),
+    whenAnd(
+      { importFinished: false },
+      {
+        timestamp: (timestamp) =>
+          Duration.greaterThan(
+            Duration.millis(Date.now() - timestamp),
+            Duration.decode("30 minutes"),
           ),
-          orElse(() => Effect.succeedNone),
-        ),
-    }),
+      },
+      () => startImport(duneExecution),
+    ),
+    orElse(() => Effect.succeedNone),
+  );
+
+export const handleRefresh = pipe(
+  checkLastExecution,
+  andThen(
+    pipe(
+      getLatestExecutionFromDuneAndCache,
+      flatMap(({ cacheExecution, duneExecution }) =>
+        Option.match(cacheExecution, {
+          onNone: () => startImport(duneExecution),
+          onSome: (execution) =>
+            restartImportIfCacheExecutionStale(execution, duneExecution),
+        }),
+      ),
+    ),
   ),
 );

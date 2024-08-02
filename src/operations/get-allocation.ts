@@ -1,4 +1,4 @@
-import { Console, Effect, Option, pipe } from "effect";
+import { Effect, Option, pipe } from "effect";
 import { Address } from "../schema.js";
 import {
   getLatestExecution,
