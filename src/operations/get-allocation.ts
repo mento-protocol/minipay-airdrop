@@ -29,7 +29,7 @@ export const getAllocation = (address: Address) =>
         Effect.orElseFail(noAllocation),
         Effect.zip(Effect.succeed(execution)),
       ),
-    ),  
+    ),
     map(([{ mento_reward, cusd_reward }, { timestamp }]) =>
       alloc(address, mento_reward, cusd_reward, timestamp),
     ),
