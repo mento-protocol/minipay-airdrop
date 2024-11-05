@@ -13,19 +13,9 @@ import { logMiddleware } from "../logger.js";
 
 const GetAllocationResponse = Schema.Struct({
   address: Address,
-  stats: Schema.Struct({
-    cUSDAverageBalance: Schema.Number,
-    cUSDTransferVolume: Schema.Number,
-  }),
   allocation: Schema.Struct({
-    mento: Schema.Struct({
-      fromHoldings: Schema.Number,
-      fromTransfers: Schema.Number,
-    }),
-    cUSD: Schema.Struct({
-      fromHoldings: Schema.Number,
-      fromTransfers: Schema.Number,
-    }),
+    mento: Schema.BigInt,
+    cusd: Schema.BigInt,
   }),
   refreshedAt: Schema.Number,
 });

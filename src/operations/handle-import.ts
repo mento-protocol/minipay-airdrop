@@ -49,8 +49,8 @@ export const finalizeImportIfFinished = ({
               pipe(
                 log("airdrop maximum allocation met"),
                 Effect.annotateLogs({
-                  block: execution.stats.block,
-                  mentoAllcated: execution.stats.mentoAllocated,
+                  timestamp: execution.timestamp,
+                  mentoAllocated: execution.stats.mentoAllocated,
                 }),
               ),
           ),

@@ -35,18 +35,15 @@ export const ResultsQuery = Schema.Struct({
 
 export const AllocationQueryRow = Schema.Struct({
   address: Address,
-  end_block: Schema.Number,
-  amount_transferred: Schema.Number,
-  avg_amount_held: Schema.Number,
+  mento_reward: Schema.BigInt,
+  cusd_reward: Schema.BigInt,
 });
 export type AllocationQueryRow = Schema.Schema.Type<typeof AllocationQueryRow>;
 
 export const StatsQueryRow = Schema.Struct({
-  mento_earned_from_holding: Schema.Number,
-  mento_earned_from_transfers: Schema.Number,
-  total_mento_earned: Schema.Number,
-  block: Schema.Number,
-  recipients: Schema.Number,
+  total_recipients: Schema.Number,
+  total_mento_reward: Schema.BigInt,
+  total_cusd_reward: Schema.BigInt,
 });
 
 // const QueryRow = Schema.Union(AllocationQueryRow, StatsQueryRow)

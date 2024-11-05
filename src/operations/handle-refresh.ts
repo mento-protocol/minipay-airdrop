@@ -75,9 +75,9 @@ export const getAirdropStats = (staleIfOlderThan: Date) =>
         Either.fromNullable(stats.result.rows[0], () => "row-missing"),
         Either.flatMap(Schema.decodeUnknownEither(StatsQueryRow)),
         Either.map((r) => ({
-          block: r.block,
-          recipients: r.recipients,
-          mentoAllocated: r.total_mento_earned,
+          recipients: r.total_recipients,
+          mentoAllocated: r.total_mento_reward,
+          cusdAllocated: r.total_cusd_reward,
         })),
         Either.getOrThrow,
       ),
