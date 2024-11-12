@@ -30,7 +30,7 @@ export const getAllocation = (address: Address) =>
         Effect.zip(Effect.succeed(execution)),
       ),
     ),
-    map(([{ transferVolume, averageHoldings }, { timestamp }]) =>
-      alloc(address, averageHoldings, transferVolume, timestamp),
+    map(([{ mento_reward, cusd_reward }, { timestamp }]) =>
+      alloc(address, mento_reward, cusd_reward, timestamp),
     ),
   );

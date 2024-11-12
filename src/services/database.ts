@@ -17,9 +17,9 @@ export const Execution = Schema.Struct({
   importFinished: Schema.Boolean,
   rows: Schema.Number,
   stats: Schema.Struct({
-    block: Schema.Number,
-    mentoAllocated: Schema.Number,
     recipients: Schema.Number,
+    mentoAllocated: Schema.BigInt,
+    cusdAllocated: Schema.BigInt,
   }),
 });
 
@@ -35,8 +35,8 @@ export const ExecutionsIndex = Schema.Array(
 export type ExecutionsIndex = Schema.Schema.Type<typeof ExecutionsIndex>;
 
 export const Allocation = Schema.Struct({
-  transferVolume: Schema.NumberFromString,
-  averageHoldings: Schema.NumberFromString,
+  mento_reward: Schema.BigInt,
+  cusd_reward: Schema.BigInt,
 });
 
 export type Allocation = Schema.Schema.Type<typeof Allocation>;
@@ -47,14 +47,14 @@ class KEYS {
   static readonly EXECUTION_INDEX = "index:execution";
   static readonly ALLOCATION = (executionId: string, address: string) =>
     `allocation:${executionId}:${address.toLowerCase()}`;
-  static readonly ALLOCATION_TRANSFER_VOLUME = (
+  static readonly ALLOCATION_MENTO_REWARD = (
     executionId: string,
     address: string,
-  ) => `${this.ALLOCATION(executionId, address)}:transfer-volume`;
-  static readonly ALLOCATION_AVERAGE_HOLDINGS = (
+  ) => `${this.ALLOCATION(executionId, address)}:mento-reward`;
+  static readonly ALLOCATION_CUSD_REWARD = (
     executionId: string,
     address: string,
-  ) => `${this.ALLOCATION(executionId, address)}:average-holdings`;
+  ) => `${this.ALLOCATION(executionId, address)}:cusd-reward`;
   static readonly ALLOCATIONS_IMPORTED = (executionId: string) =>
     `execution:${executionId}:rows-imported`;
 }
@@ -126,13 +126,18 @@ export const getExecution = (id: string) =>
   );
 
 export const saveLatestExecution = (execution: Execution) =>
-  call((db) => db.client.set(KEYS.LATEST_EXECUTION, JSON.stringify(execution)));
+  call((db) =>
+    db.client.set(
+      KEYS.LATEST_EXECUTION,
+      JSON.stringify(Schema.encodeSync(Execution)(execution)),
+    ),
+  );
 
 export const saveExecution = (execution: Execution) =>
   call((db) =>
     db.client.set(
       KEYS.EXECUTION(execution.executionId),
-      JSON.stringify(execution),
+      JSON.stringify(Schema.encodeSync(Execution)(execution)),
     ),
   );
 
@@ -172,14 +177,14 @@ export const saveAllocations = (
     allocations.forEach((allocation) => {
       batch = batch
         .setex(
-          KEYS.ALLOCATION_AVERAGE_HOLDINGS(executionId, allocation.address),
+          KEYS.ALLOCATION_MENTO_REWARD(executionId, allocation.address),
           db.allocationKeyExpiry,
-          allocation.avg_amount_held,
+          allocation.mento_reward.toString(),
         )
         .setex(
-          KEYS.ALLOCATION_TRANSFER_VOLUME(executionId, allocation.address),
+          KEYS.ALLOCATION_CUSD_REWARD(executionId, allocation.address),
           db.allocationKeyExpiry,
-          allocation.amount_transferred,
+          allocation.cusd_reward.toString(),
         );
     });
     const responses = await batch.exec();
@@ -208,15 +213,16 @@ export const resetAllocationsImported = (executionId: string) =>
 export const getAllocation = (executionId: string, address: string) =>
   Effect.zipWith(
     call((db) =>
-      db.client.get(KEYS.ALLOCATION_TRANSFER_VOLUME(executionId, address)),
+      db.client.get(KEYS.ALLOCATION_MENTO_REWARD(executionId, address)),
     ),
     call((db) =>
-      db.client.get(KEYS.ALLOCATION_AVERAGE_HOLDINGS(executionId, address)),
+      db.client.get(KEYS.ALLOCATION_CUSD_REWARD(executionId, address)),
     ),
-    (transferVolume, averageHoldings) => {
-      return Schema.decodeUnknownOption(Allocation)({
-        transferVolume,
-        averageHoldings,
+    (mento_reward, cusd_reward) => {
+      if (!mento_reward && !cusd_reward) return Option.none();
+      return Schema.decodeOption(Allocation)({
+        mento_reward: mento_reward ?? "0",
+        cusd_reward: cusd_reward ?? "0",
       });
     },
     { concurrent: true },
